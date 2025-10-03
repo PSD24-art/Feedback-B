@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Quick Test</title>
+  </head>
+  <body>
+    <h2>Login</h2>
+    <form id="loginForm">
+      <input type="text" name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+
+    <h2>Change Password</h2>
+    <form id="changeForm">
+      <input
+        type="password"
+        name="oldPassword"
+        placeholder="Old Password"
+        required
+      />
+      <input
+        type="password"
+        name="newPassword"
+        placeholder="New Password"
+        required
+      />
+      <button type="submit">Change Password</button>
+    </form>
+
+    <button id="logoutBtn">Logout</button>
+
+    <script>
+      const API = "http://localhost:3420";
+
+      // LOGIN
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const res = await fetch(API + "/login", {
+            method: "POST",
+            credentials: "include", // IMPORTANT: keep cookies
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: form.username.value,
+              password: form.password.value,
+            }),
+          });
+          const data = await res.json();
+          console.log(data);
+        });
+
+      // CHANGE PASSWORD
+      document
+        .getElementById("changeForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const res = await fetch(API + "/change-password", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              oldPassword: form.oldPassword.value,
+              newPassword: form.newPassword.value,
+            }),
+          });
+          const data = await res.json();
+          console.log(data);
+        });
+
+      // LOGOUT
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          const res = await fetch(API + "/logout", {
+            method: "GET",
+            credentials: "include",
+          });
+          const data = await res.json();
+          console.log(data);
+        });
+    </script>
+  </body>
+</html>

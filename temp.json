@@ -1,0 +1,35 @@
+{
+  "studentRoll": "PS230",
+  "faculty": "68c02899e44b9c608749c62f",
+  "subject": "68c028c9ae527875df44ca3d",
+  "token": "6c95f097-0140-4304-bc3d-738aedceaae8",
+  "parameter1": {
+    "q1": 2,
+    "q2": 3,
+    "q3": 2
+  },
+  "parameter2": {
+    "q1": 1,
+    "q2": 2,
+    "q3": 3
+  },
+  "parameter3": {
+    "q1": 1,
+    "q2": 2,
+    "q3": 3
+  },
+  "parameter4": {
+    "q1": 1,
+    "q2": 2,
+    "q3": 3
+  },
+  "parameter5": {
+    "q1": 1,
+    "q2": 2,
+    "q3": 3
+  },
+  "overallEffectiveness": 4,
+  "strengths": "strengths",
+  "improvements": "improvements",
+  "additionalComments": "additionalComments"
+}
