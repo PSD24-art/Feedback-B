@@ -23,31 +23,36 @@ adminRouter.get("/admin/:id", isAuthenticated, isAdmin, getFaculties);
 
 //get faculty
 adminRouter.get(
-  "/admin/faculties/:id",
+  "/admin/:id/faculties/:facultyId",
   isAuthenticated,
   isAdmin,
   getOneFaculty
 );
 //Faculty Created Links
 adminRouter.get(
-  "/admin/faculties/:id/links",
+  "/admin/:id/faculties/:facultyId/links",
   isAdmin,
   isAuthenticated,
   getFeedbackLinkAdmin
 );
 //Faculty feedback details
 adminRouter.get(
-  "/admin/faculties/:id/feedback/:subject",
+  "/admin/:id/faculties/:facultyId/feedback/:subject",
   isAdmin,
   isAuthenticated,
   getFeedbackCountAdmin
 );
 //add faculty
-adminRouter.post("/admin/faculties/new", isAuthenticated, isAdmin, postFaculty);
+adminRouter.post(
+  "/admin/:id/faculties/new",
+  isAuthenticated,
+  isAdmin,
+  postFaculty
+);
 
 //delete faculty
 adminRouter.delete(
-  "/admin/faculties/:id",
+  "/admin/:id/faculties/:facultyId",
   isAuthenticated,
   isAdmin,
   deleteFaculty

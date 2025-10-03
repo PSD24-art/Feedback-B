@@ -1,4 +1,4 @@
-const Faculty = require("../models/faculty");
+const User = require("../models/user");
 const Subject = require("../models/subject");
 const FeedbackLink = require("../models/feedbackLink");
 const Feedback = require("../models/feedback");
@@ -8,9 +8,9 @@ require("dotenv").config();
 
 exports.getFaculties = async (req, res) => {
   try {
-    const { id } = req.params;
-    let admin = await Faculty.findById(id);
-    const allFaculties = await Faculty.find({ role: "faculty" });
+    const { id, facultyId } = req.params;
+    let admin = await User.findById(facultyId);
+    const allFaculties = await User.find({ role: "faculty" });
     //   console.log(allFaculties);
     res.json({ admin, allFaculties });
   } catch (e) {
@@ -24,7 +24,7 @@ exports.getFaculties = async (req, res) => {
 exports.postFaculty = async (req, res) => {
   const { name, email, department } = req.body;
   let username = email.toLowerCase().split("@")[0] + "@tiet";
-  const newFaculty = new Faculty({
+  const newFaculty = new User({
     username,
     name,
     email,
@@ -40,17 +40,17 @@ exports.postFaculty = async (req, res) => {
 
   try {
     console.log("Checking existing faculty...");
-    const checkExistingFaculty = await Faculty.findOne({ username });
+    const checkExistingFaculty = await User.findOne({ username });
     if (checkExistingFaculty) {
       return res
         .status(409)
-        .json({ message: "Faculty exists with same email id" });
+        .json({ message: "User exists with same email id" });
     }
 
     console.log("Registering new faculty...");
-    const result = await Faculty.register(newFaculty, defPass);
+    const result = await User.register(newFaculty, defPass);
 
-    console.log("Faculty registered:", result);
+    console.log("User registered:", result);
 
     // 🔹 Setup Nodemailer transport
     const transporter = nodemailer.createTransport({
@@ -61,17 +61,17 @@ exports.postFaculty = async (req, res) => {
       },
     });
 
-    // 🔹 Send email
+    //Send email
     const mailOptions = {
       from: `"Feedback Guru" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Your Faculty Account Has Been Created",
+      subject: "Your User Account Has Been Created",
       text: `Hello ${name},\n\nYour faculty account has been created successfully.\n\nUsername: ${username}\nPassword: ${defPass}\n\nPlease login and change your password.\n\nRegards,\nFeedback Guru`,
     };
 
     await transporter.sendMail(mailOptions);
 
-    res.json({ message: "Faculty added successfully & email sent", result });
+    res.json({ message: "User added successfully & email sent", result });
   } catch (e) {
     console.error("Error in postFaculty:", e);
     res.status(500).json({ error: e.message });
@@ -80,8 +80,8 @@ exports.postFaculty = async (req, res) => {
 
 exports.getOneFaculty = async (req, res) => {
   try {
-    const { id } = req.params;
-    let faculty = await Faculty.findById(id);
+    const { id, facultyId } = req.params;
+    let faculty = await User.findById(facultyId);
     //all subjects should be hardcoded in the databse
     const subject = await Subject.find({ faculty: faculty._id });
     if (!subject) {
@@ -98,19 +98,18 @@ exports.getOneFaculty = async (req, res) => {
 };
 
 exports.deleteFaculty = async (req, res) => {
-  const { id } = req.params;
-  console.log(id);
-  const deleteFaculty = await Faculty.findByIdAndDelete(id);
+  const { id, facultyId } = req.params;
+  const deleteFaculty = await User.findByIdAndDelete(facultyId);
   console.log(deleteFaculty);
-  res.json({ message: "Faculty Deleted Successfully", deleteFaculty });
+  res.json({ message: "User Deleted Successfully", deleteFaculty });
 };
 
 //Controller for getting faculty links
 exports.getFeedbackLinkAdmin = async (req, res) => {
-  const { id } = req.params;
+  const { id, facultyId } = req.params;
 
   try {
-    const links = await FeedbackLink.find({ faculty: id }).populate(
+    const links = await FeedbackLink.find({ faculty: facultyId }).populate(
       "subject",
       "name unique_code"
     );
@@ -125,8 +124,8 @@ exports.getFeedbackLinkAdmin = async (req, res) => {
 //Controller for getting feedback docs and count
 exports.getFeedbackCountAdmin = async (req, res) => {
   try {
-    const { id, subject } = req.params;
-    const result = await Feedback.find({ faculty: id, subject });
+    const { id, facultyId, subject } = req.params;
+    const result = await Feedback.find({ faculty: facultyId, subject });
 
     if (result.length === 0) {
       return res.json({
