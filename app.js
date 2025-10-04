@@ -15,6 +15,7 @@ const adminRouter = require("./routes/adminRouter");
 const loginRouter = require("./routes/login");
 const Faculty = require("./models/faculty");
 const { isAuthenticated } = require("./middleware/middleware");
+const User = require("./models/user");
 
 const app = express();
 
@@ -25,12 +26,12 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "https://feedback-guru-f.onrender.com"],
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: ["http://localhost:5173", "https://feedback-guru-f.onrender.com"],
+//     credentials: true,
+//   })
+// );
 
 // Session
 const isProduction = process.env.NODE_ENV === "production";
@@ -55,9 +56,9 @@ app.use(session(sessionOptions));
 // Passport
 app.use(passport.initialize());
 app.use(passport.session());
-passport.use(new LocalStrategy(Faculty.authenticate()));
-passport.serializeUser(Faculty.serializeUser());
-passport.deserializeUser(Faculty.deserializeUser());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 // DB
 const DB_URI = process.env.MONGO_URI;

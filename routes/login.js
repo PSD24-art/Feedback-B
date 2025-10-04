@@ -2,7 +2,7 @@ const express = require("express");
 const passport = require("passport");
 const { isAuthenticated } = require("../middleware/middleware");
 const router = express.Router();
-const Faculty = require("../models/faculty");
+
 router.post("/login", passport.authenticate("local"), async (req, res) => {
   res.json({
     message: "Login successful",

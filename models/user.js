@@ -1,15 +1,15 @@
 const mongoose = require("mongoose");
 const { Schema } = require("mongoose");
 const passportLocalMongoose = require("passport-local-mongoose");
-require("dotenv").config({ path: "../.env" });
+// require("dotenv").config({ path: "../.env" });
 
-main()
-  .then(() => console.log("Databse Connected"))
-  .catch((err) => console.log(err));
+// main()
+//   .then(() => console.log("Databse Connected"))
+//   .catch((err) => console.log(err));
 
-async function main() {
-  await mongoose.connect(process.env.MONGO_URI);
-}
+// async function main() {
+//   await mongoose.connect(process.env.MONGO_URI);
+// }
 
 const userSchema = new Schema({
   name: { type: String, required: true },
@@ -27,6 +27,7 @@ const User = mongoose.model("User", userSchema);
 module.exports = User;
 
 // const addFaculty = async () => {
+//   // await User.deleteMany({});
 //   const faculty1 = new User({
 //     name: "D. J. Manowar",
 //     username: "djmanowar",
@@ -44,17 +45,16 @@ module.exports = User;
 // };
 // addFaculty();
 
-const seedAdmin = async () => {
-  const admin = new User({
-    name: "Prathamesh Dahake",
-    username: "pratham@tiet",
-    email: "prathameshd025@tietdarapu.in",
-    role: "admin",
-    isPasswordSet: false,
-    institute: "68dffb0d52a756b9b99f98d1",
-    institute: "68dfb1dee6ee3ac5e76bcab0",
-  });
-  const newAdmin = await User.register(admin, "defaultPassword");
-  console.log(admin);
-};
-seedAdmin();
+// const seedAdmin = async () => {
+//   const admin = new User({
+//     name: "Prathamesh Dahake",
+//     username: "pratham@tiet",
+//     email: "prathameshd025@tietdarapu.in",
+//     role: "admin",
+//     isPasswordSet: false,
+//     institute: "68dffb0d52a756b9b99f98d1",
+//   });
+//   const newAdmin = await User.register(admin, "defaultPassword");
+//   console.log(newAdmin);
+// };
+// seedAdmin();
