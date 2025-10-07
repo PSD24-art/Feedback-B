@@ -13,7 +13,6 @@ exports.getFaculties = async (req, res) => {
     try {
       let admin = await User.findById(id).populate("institute", "name code");
       const instituteId = admin.institute;
-      console.log(instituteId);
       // const institute = await Institute.findById(instituteId);
       // console.log(institute);
       const allFaculties = await User.find({

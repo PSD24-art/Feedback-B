@@ -7,7 +7,6 @@ const {
   getFaculty,
   putSubject,
   getToken,
-  getSubject,
   postSubject,
   getSubjectWithDept,
   getSubjectWithDeptSem,
@@ -18,44 +17,34 @@ const {
 } = facultyController;
 
 //Flow: faculty -> your subjects -> add subject -> generate Link (Link generated)
-
-//fetches faculty and subject data of the faculty
-facultyRouter.get("/faculties/:id", isAuthenticated, getFaculty);
-//Get all subjects
-facultyRouter.get("/faculties/:id/subject", isAuthenticated, getSubject);
-//Add new subject in DB
-facultyRouter.post("/faculties/:id/subject", isAuthenticated, postSubject);
-//Add subject for feedback form and insert faculty id to it
-facultyRouter.put("/faculties/:id/subject", isAuthenticated, putSubject);
-
-//Feedback link adding to db
-facultyRouter.post("/faculties/:id/feedback", postFeedbackLink);
-//Get all feedback links
-facultyRouter.get("/faculties/:id/feedback", isAuthenticated, getFeedbackLink);
-//Delete Faculty link
-facultyRouter.delete(
-  "/faculties/:id/feedback/:link",
-  isAuthenticated,
-  deleteFeedbackLink
-);
 //Search subjects router
+// subject routes with dept/sem
 facultyRouter.get(
-  "/faculties/:id/subject/:dept",
-  isAuthenticated,
-  getSubjectWithDept
-);
-facultyRouter.get(
-  "/faculties/:id/subject/:dept/:sem",
+  "/:id/subject/:dept/:sem",
   isAuthenticated,
   getSubjectWithDeptSem
 );
-//Fetches the count for feedbacks submitted agianst the same faculty and subject
-facultyRouter.get(
-  "/faculties/:id/count/:subject",
+facultyRouter.get("/:id/subject/:dept", isAuthenticated, getSubjectWithDept);
+
+facultyRouter
+  .route("/:id/subject")
+  .post(isAuthenticated, postSubject)
+  .put(isAuthenticated, putSubject);
+
+// Feedback links: list and create under same path, delete on param'd path
+facultyRouter
+  .route("/:id/feedback")
+  .get(isAuthenticated, getFeedbackLink)
+  .post(postFeedbackLink);
+
+facultyRouter.delete(
+  "/:id/feedback/:link",
   isAuthenticated,
-  getFeedbackCount
+  deleteFeedbackLink
 );
-//This module creates a unique link
-facultyRouter.get("/faculties/:id/tokens/:code", getToken);
+
+facultyRouter.get("/:id/count/:subject", isAuthenticated, getFeedbackCount);
+facultyRouter.get("/:id/tokens/:code", getToken);
+facultyRouter.route("/:id").get(isAuthenticated, getFaculty);
 
 module.exports = facultyRouter;

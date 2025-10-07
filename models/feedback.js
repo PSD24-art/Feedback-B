@@ -18,48 +18,51 @@ const feedbackSchema = new Schema({
     required: true,
   },
   faculty: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   subject: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: "Subject",
     required: true,
   },
   token: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: "Token",
     required: true,
-  }, // track who gave feedback
+  },
 
-  // Parameters 1–5 (Likert scale ratings, e.g. 1–5)
+  // Parameters 1
   parameter1: {
-    q1: { type: Number, min: 1, max: 5 }, // strong understanding
-    q2: { type: Number, min: 1, max: 5 }, // explains clearly
-    q3: { type: Number, min: 1, max: 5 }, // relates to real-life
+    q1: { type: Number, min: 1, max: 5 },
+    q2: { type: Number, min: 1, max: 5 },
   },
   parameter2: {
-    q1: { type: Number, min: 1, max: 5 }, // encourages participation
-    q2: { type: Number, min: 1, max: 5 }, // effective teaching methods
-    q3: { type: Number, min: 1, max: 5 }, // uses AI/digital tools
-    q4: { type: Number, min: 1, max: 5 }, // motivates self-learning
+    q1: { type: Number, min: 1, max: 5 },
+    q2: { type: Number, min: 1, max: 5 },
+    q3: { type: Number, min: 1, max: 5 },
+    q4: { type: Number, min: 1, max: 5 },
   },
   parameter3: {
-    q1: { type: Number, min: 1, max: 5 }, // communicates effectively
-    q2: { type: Number, min: 1, max: 5 }, // approachable
-    q3: { type: Number, min: 1, max: 5 }, // equal opportunities
+    q1: { type: Number, min: 1, max: 5 },
+    q2: { type: Number, min: 1, max: 5 },
+    q3: { type: Number, min: 1, max: 5 },
+    q4: { type: Number, min: 1, max: 5 },
   },
   parameter4: {
-    q1: { type: Number, min: 1, max: 5 }, // constructive feedback
-    q2: { type: Number, min: 1, max: 5 }, // fair evaluation
-    q3: { type: Number, min: 1, max: 5 }, // helps understand mistakes
+    q1: { type: Number, min: 1, max: 5 },
+    q2: { type: Number, min: 1, max: 5 },
+    q3: { type: Number, min: 1, max: 5 },
   },
   parameter5: {
-    q1: { type: Number, min: 1, max: 5 }, // maintains discipline
-    q2: { type: Number, min: 1, max: 5 }, // punctual
-    q3: { type: Number, min: 1, max: 5 }, // treats fairly
+    q1: { type: Number, min: 1, max: 5 },
+    q2: { type: Number, min: 1, max: 5 },
+    q3: { type: Number, min: 1, max: 5 },
   },
 
   // Parameter 6 (open-ended)
-  overallEffectiveness: { type: Number, min: 1, max: 5 }, // optional numeric rating
+  overallEffectiveness: { type: Number, min: 1, max: 5 },
   strengths: { type: String },
   improvements: { type: String },
   additionalComments: { type: String },

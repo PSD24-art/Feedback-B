@@ -11,11 +11,7 @@ exports.checkFeedback = async (req, res) => {
   }
 
   const { studentRoll } = req.body;
-  console.log("Checking feedback with:", {
-    studentRoll,
-    faculty: recievedToken.faculty,
-    subject: recievedToken.subject,
-  });
+
   const existingFeedback = await Feedback.findOne({
     studentRoll,
     faculty: recievedToken.faculty,

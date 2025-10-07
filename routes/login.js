@@ -1,17 +1,22 @@
 const express = require("express");
 const passport = require("passport");
 const { isAuthenticated } = require("../middleware/middleware");
+const User = require("../models/user");
 const router = express.Router();
 
 router.post("/login", passport.authenticate("local"), async (req, res) => {
+  const userId = req.user._id;
+  const user = await User.findById(userId).populate("institute");
   res.json({
     message: "Login successful",
     user: {
       id: req.user._id,
       role: req.user.role,
       username: req.user.username,
+      Institute: user.institute,
     },
   });
+  console.log("Login success");
 });
 
 router.get("/logout", (req, res, next) => {

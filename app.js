@@ -26,12 +26,12 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// app.use(
-//   cors({
-//     origin: ["http://localhost:5173", "https://feedback-guru-f.onrender.com"],
-//     credentials: true,
-//   })
-// );
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://feedback-guru-f.onrender.com"],
+    credentials: true,
+  })
+);
 
 // Session
 const isProduction = process.env.NODE_ENV === "production";
@@ -78,10 +78,10 @@ app.get("/api/me", isAuthenticated, (req, res) => {
   res.json({ user: req.user });
 });
 
-app.use("/api", loginRouter);
-app.use("/api", adminRouter);
+app.use("/api/faculty", facultyRouter);
+app.use("/api/admin", adminRouter);
 app.use("/api", studentRouter);
-app.use("/api", facultyRouter);
+app.use("/api", loginRouter);
 
 // Error handler
 app.use((err, req, res, next) => {

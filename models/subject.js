@@ -14,9 +14,9 @@ const subjectSchema = new Schema({
   name: { type: String, required: true },
   code: { type: Number, require: true, min: 1, max: 15 },
   department: { type: String, require: true },
-  faculty: { type: Schema.Types.ObjectId, ref: "Faculty" },
+  faculty: { type: Schema.Types.ObjectId, ref: "User" },
   semester: { type: String, required: true },
-  created_by: { type: Schema.Types.ObjectId, ref: "Faculty" },
+  created_by: { type: Schema.Types.ObjectId, ref: "User" },
   unique_code: { type: String, required: true, unique: true },
 });
 

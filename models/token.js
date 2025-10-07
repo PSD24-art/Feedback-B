@@ -1,3 +1,4 @@
+const { string } = require("joi");
 const mongoose = require("mongoose");
 const { Schema } = require("mongoose");
 // main()
@@ -9,10 +10,10 @@ const { Schema } = require("mongoose");
 // }
 
 const tokenSchema = new Schema({
-  token: { type: String, required: true, unique: true },
+  token: { type: String, unique: true },
   faculty: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Faculty",
+    ref: "User",
     required: true,
   },
   subject: {

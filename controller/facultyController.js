@@ -1,56 +1,78 @@
-const Faculty = require("../models/faculty");
 const Feedback = require("../models/feedback");
 const FeedbackLink = require("../models/feedbackLink");
 const Subject = require("../models/subject");
 const Token = require("../models/token");
 const { v4: uuidv4 } = require("uuid");
+const User = require("../models/user");
 const PORT = 3420;
+const feedbackCalculator = require("../utils/feedbackCalculator");
+const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 
 exports.getFaculty = async (req, res) => {
   const { id } = req.params;
-  if (req.user._id.toString() === id) {
-    let faculty = await Faculty.findById(id);
-    // console.log(faculty);
+  console.log("User Id: ", id);
 
-    //all subjects should be hardcoded in the databse
-    const subject = await Subject.find({ faculty: faculty._id });
-    // console.log(subject);
-
-    if (!subject) {
-      return res.status(404).json({ error: "no subjects to fetch" });
-    }
-    if (!faculty) {
-      return res.status(404).json({ error: "no subjects to fetch" });
-    }
-    console.log("Faculty: ", faculty, " Subject: ", subject);
-
-    res.json({ faculty });
+  if (req.user._id.toString() !== id) {
+    return res.status(403).json({ error: "Unauthorized access" });
   }
-};
 
-exports.getSubject = async (req, res) => {
   try {
-    const { id } = req.params;
+    const faculty = await User.findById(id);
+    if (!faculty) return res.status(404).json({ error: "Faculty not found" });
 
-    if (req.user._id.toString() !== id) {
-      return res.status(403).json({ error: "Unauthorized" });
+    // all feedback links created by this faculty
+    const feedbackLinks = await FeedbackLink.find({ faculty: id });
+    const subjectIds = feedbackLinks.map((link) => link.subject.toString());
+
+    //  subject names
+    const subjectNames = await Promise.all(
+      subjectIds.map(async (sid) => {
+        const subject = await Subject.findById(sid);
+        return subject ? subject.name : "Unknown Subject";
+      })
+    );
+
+    // Fetch feedbacks per subject
+    const feedbackArrays = await Promise.all(
+      subjectIds.map((sid) => Feedback.find({ faculty: id, subject: sid }))
+    );
+
+    // Calculate average ratings
+    const overallAvgArray = feedbackArrays.map((feedbackArr) => {
+      if (!feedbackArr.length) return 0;
+      const avg = feedbackCalculator(feedbackArr);
+      return Number.isNaN(avg) ? 0 : Number(avg.toFixed(2));
+    });
+
+    let sumOfAvg = 0;
+    for (let i = 0; i < overallAvgArray.length; i++) {
+      sumOfAvg = sumOfAvg + overallAvgArray[i];
     }
 
-    const subject = await Subject.find({ faculty: id });
-    res.json({ subject });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    const totalRating = sumOfAvg / overallAvgArray.length;
+    console.log("Total ratings: ", totalRating);
+
+    // response object
+    const ratingObjects = subjectNames.map((name, i) => ({
+      subjectName: name,
+      avgRating: overallAvgArray[i],
+    }));
+
+    console.log("Ratings Objects: ", ratingObjects);
+
+    //  Send response
+    res.json({ faculty, ratingObjects, totalRating });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
   }
 };
 
 exports.putSubject = async (req, res) => {
   const { id } = req.params;
   if (req.user._id.toString() === id) {
-    let faculty = await Faculty.findById(id);
-    // console.log(faculty);
+    let faculty = await User.findById(id);
     const { code } = req.body;
-    console.log(code);
     //subjects should be added by faculty
     const subject = await Subject.findOne({ unique_code: code });
 
@@ -61,8 +83,8 @@ exports.putSubject = async (req, res) => {
     if (!subject) {
       return res.status(404).json({ error: "Subject not found" });
     }
-    if (subject.faculty !== faculty) {
-      subject.faculty = faculty;
+    if (subject.faculty !== faculty._id) {
+      subject.faculty = faculty._id;
     } else {
       res.json({ message: "Faculty exists with the selected subjects" });
     }
@@ -76,63 +98,83 @@ exports.putSubject = async (req, res) => {
 
 exports.postSubject = async (req, res) => {
   const { id } = req.params;
-  if (req.user._id.toString() === id) {
-    let faculty = await Faculty.findById(id);
-    // console.log(faculty);
+
+  if (req.user._id.toString() !== id) {
+    return res.status(403).json({ error: "Unauthorized access" });
+  }
+
+  try {
+    const faculty = await User.findById(id);
+    if (!faculty) {
+      return res.status(404).json({ error: "User not found!" });
+    }
+
     const { name, code, department, semester } = req.body;
-    console.log(name, code, department, semester);
 
-    const unique_code = department + semester + code;
+    // unique code (department + semester + code)
+    const unique_code = `${department}${semester}${code}`;
+
+    // check existing subject
     const findExistingSubject = await Subject.findOne({ unique_code });
-    if (findExistingSubject)
-      return res.status(500).json({ error: "Subject already exists!" });
+    if (findExistingSubject) {
+      return res.status(400).json({ error: "Subject already exists!" });
+    }
 
+    // create new subject
     const newSubject = new Subject({
       name,
       code,
       department,
       semester,
       unique_code,
+      institute: faculty.institute,
+      created_by: faculty._id,
     });
 
-    const subject = await newSubject.save();
+    const savedSubject = await newSubject.save();
 
-    if (!faculty) {
-      return res.status(404).json({ error: "Faculty not found!" });
-    }
-
-    if (!subject) {
-      return res.status(404).json({ error: "Subject not saved!" });
-    }
-
-    subject.created_by = faculty;
-    const result = await subject.save();
-    console.log("New Subject", result);
-    res.json({ message: "Subject saved!", subject, created_by: faculty });
+    res.status(201).json({
+      message: "Subject saved successfully!",
+      subject: savedSubject,
+      created_by: faculty,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Failed to save subject",
+      error: err.message,
+    });
   }
 };
 
 exports.getToken = async (req, res) => {
   const { id, code } = req.params;
   try {
-    const token = uuidv4();
-    let subject = await Subject.findOne({ unique_code: code });
-    if (subject) {
-      const newToken = new Token({
-        token: token,
-        faculty: id,
-        subject: subject,
-      });
+    const subject = await Subject.findOne({ unique_code: code });
+    const faculty = await User.findById(id);
 
-      await newToken.save();
-      res.json({
-        // link: `http://localhost:${PORT}/feedback/${token}`, //React new Link
-        newToken,
-      });
+    if (!subject || !faculty) {
+      return res.status(404).json({ error: "Faculty or subject not found" });
     }
+
+    const token = uuidv4();
+    const newToken = new Token({
+      token,
+      faculty: faculty._id,
+      subject: subject._id,
+    });
+
+    const savedToken = await newToken.save();
+
+    // populate after saving (populate works on documents returned from queries)
+    const populatedToken = await Token.findById(savedToken._id)
+      .populate("faculty", "name")
+      .populate("subject", "name unique_code");
+
+    res.json({ newToken: populatedToken });
   } catch (error) {
-    console.log(error);
-    res.json({ error });
+    console.error(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -186,16 +228,16 @@ exports.postFeedbackLink = async (req, res) => {
     const { subject, link } = req.body;
     console.log("subject", subject);
     // Verify faculty exists
-    const faculty = await Faculty.findById(id);
+    const faculty = await User.findById(id);
     if (!faculty) {
-      return res.status(404).json({ error: "Faculty not found" });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Check if feedback link already exists
     const existingLink = await FeedbackLink.findOne({ subject, link });
 
     if (existingLink) {
-      const createdByFaculty = await Faculty.findById(existingLink.faculty);
+      const createdByFaculty = await User.findById(existingLink.faculty);
       const facultyName = createdByFaculty ? createdByFaculty.name : "Unknown";
       return res.json({ message: `Link already created by ${facultyName}` });
     }
@@ -266,9 +308,16 @@ exports.getFeedbackCount = async (req, res) => {
         FeedbackLength: 0,
       });
     }
+    const ratings = criteriWiseCharts(result);
 
-    console.log("Found feedbacks:", result.length);
-    res.json({ Feedbacks: result, FeedbackLength: result.length });
+    if (!ratings)
+      return res.json({
+        FeedbackLength: result.length,
+        ratings: "No ratings found",
+      });
+
+    console.log("ratings: ", ratings);
+    res.json({ FeedbackLength: result.length, ratings });
   } catch (e) {
     console.error("Error in getFeedbackCount:", e);
     res.status(500).json({ error: e.message });
