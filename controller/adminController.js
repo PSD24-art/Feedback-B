@@ -6,6 +6,8 @@ const Institute = require("../models/institute");
 
 const validator = require("validator");
 const nodemailer = require("nodemailer");
+const feedbackCalculator = require("../utils/feedbackCalculator");
+const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 require("dotenv").config();
 exports.getFaculties = async (req, res) => {
   const { id } = req.params;
@@ -105,7 +107,49 @@ exports.getOneFaculty = async (req, res) => {
       if (!faculty) {
         res.status(404).json({ error: "no subjects to fetch" });
       }
-      res.json({ faculty, subject });
+
+      // all feedback links created by this faculty
+      const feedbackLinks = await FeedbackLink.find({ faculty: facultyId });
+      const subjectIds = feedbackLinks.map((link) => link.subject.toString());
+
+      //  subject names
+      const subjectNames = await Promise.all(
+        subjectIds.map(async (sid) => {
+          const subject = await Subject.findById(sid);
+          return subject ? subject.name : "Unknown Subject";
+        })
+      );
+
+      // Fetch feedbacks per subject
+      const feedbackArrays = await Promise.all(
+        subjectIds.map((sid) =>
+          Feedback.find({ faculty: facultyId, subject: sid })
+        )
+      );
+
+      // Calculate average ratings
+      const overallAvgArray = feedbackArrays.map((feedbackArr) => {
+        if (!feedbackArr.length) return 0;
+        const avg = feedbackCalculator(feedbackArr);
+        return Number.isNaN(avg) ? 0 : Number(avg.toFixed(2));
+      });
+
+      let sumOfAvg = 0;
+      for (let i = 0; i < overallAvgArray.length; i++) {
+        sumOfAvg = sumOfAvg + overallAvgArray[i];
+      }
+
+      const totalRating = (sumOfAvg / overallAvgArray.length).toFixed(2);
+      console.log("Total ratings: ", totalRating);
+
+      // response object
+      const ratingObjects = subjectNames.map((name, i) => ({
+        subjectName: name,
+        avgRating: overallAvgArray[i],
+      }));
+
+      console.log("Ratings Objects: ", ratingObjects);
+      res.json({ faculty, subject, ratingObjects, totalRating });
     } catch (e) {
       console.log(e.message);
       res.json({ error: e.message });
@@ -153,9 +197,15 @@ exports.getFeedbackCountAdmin = async (req, res) => {
           FeedbackLength: 0,
         });
       }
+      const ratings = criteriWiseCharts(result);
 
+      if (!ratings)
+        return res.json({
+          FeedbackLength: result.length,
+          ratings: "No ratings found",
+        });
       console.log("Found feedbacks:", result.length);
-      res.json({ Feedbacks: result, FeedbackLength: result.length });
+      res.json({ ratings, FeedbackLength: result.length });
     } catch (e) {
       console.error("Error in getFeedbackCount:", e);
       res.status(500).json({ error: e.message });

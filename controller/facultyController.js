@@ -49,7 +49,7 @@ exports.getFaculty = async (req, res) => {
       sumOfAvg = sumOfAvg + overallAvgArray[i];
     }
 
-    const totalRating = sumOfAvg / overallAvgArray.length;
+    const totalRating = (sumOfAvg / overallAvgArray.length).toFixed(2);
     console.log("Total ratings: ", totalRating);
 
     // response object
