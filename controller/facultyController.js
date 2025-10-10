@@ -7,7 +7,8 @@ const User = require("../models/user");
 const PORT = 3420;
 const feedbackCalculator = require("../utils/feedbackCalculator");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
-
+const analyzeRatings = require("../utils/analyzeRatings");
+require("dotenv").config();
 exports.getFaculty = async (req, res) => {
   const { id } = req.params;
   console.log("User Id: ", id);
@@ -59,9 +60,11 @@ exports.getFaculty = async (req, res) => {
     }));
 
     console.log("Ratings Objects: ", ratingObjects);
+    const ratingsForAi = analyzeRatings(ratingObjects);
+    console.log("ratings for AI Subjects: ", ratingsForAi);
 
     //  Send response
-    res.json({ faculty, ratingObjects, totalRating });
+    res.json({ faculty, ratingObjects, totalRating, ratingsForAi });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -316,10 +319,81 @@ exports.getFeedbackCount = async (req, res) => {
         ratings: "No ratings found",
       });
 
-    console.log("ratings: ", ratings);
-    res.json({ FeedbackLength: result.length, ratings });
+    const fallbackRatings = [
+      { criteria: "Communication" },
+      { criteria: "Knowledge" },
+      { criteria: "Engagement" },
+      { criteria: "Punctuality" },
+      { criteria: "Doubt Solving" },
+    ];
+
+    const dataset =
+      Array.isArray(ratings) && ratings.length > 0
+        ? fallbackRatings.map((item, i) => ({
+            criteria: item.criteria,
+            avgRating: Number(ratings[i]) || 0,
+          }))
+        : fallbackRatings;
+
+    const criteriaRatingsAi = analyzeRatings(dataset);
+    console.log("criteria Rastings AI: ", criteriaRatingsAi);
+    res.json({ FeedbackLength: result.length, ratings, criteriaRatingsAi });
   } catch (e) {
     console.error("Error in getFeedbackCount:", e);
     res.status(500).json({ error: e.message });
+  }
+};
+
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API;
+
+exports.getFacultySummary = async (req, res) => {
+  try {
+    const { facultyName, criteriaAnalysis, subjectAnalysis } = req.body;
+
+    const prompt = `
+You are an AI evaluator assessing a faculty member based on feedback data.
+
+Faculty Name: ${facultyName}
+
+Criteria Analysis:
+Average Rating: ${criteriaAnalysis.avg} (${criteriaAnalysis.performanceLevel})
+Strongest Area: ${criteriaAnalysis.strongest.criteria} (${criteriaAnalysis.strongest.avgRating})
+Weakest Area: ${criteriaAnalysis.weakest.criteria} (${criteriaAnalysis.weakest.avgRating})
+
+Subject Analysis:
+Average Rating: ${subjectAnalysis.avg} (${subjectAnalysis.performanceLevel})
+Best Subject: ${subjectAnalysis.strongest.subjectName} (${subjectAnalysis.strongest.avgRating})
+Weakest Subject: ${subjectAnalysis.weakest.subjectName} (${subjectAnalysis.weakest.avgRating})
+
+Task:
+Write a 4–6 line professional summary describing the faculty’s performance.
+Highlight strengths, areas for improvement, and end with an overall remark (Excellent / Good / Needs Improvement).
+Avoid numbers, write qualitatively.
+`;
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "mistralai/mistral-7b-instruct", // you can also use 'gpt-3.5-turbo'
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 300,
+        }),
+      }
+    );
+
+    const data = await response.json();
+    const summary =
+      data?.choices?.[0]?.message?.content || "No summary generated.";
+    console.log("Generated Summary:", summary);
+    res.json({ summary });
+  } catch (error) {
+    console.error("AI Summary Error:", error);
+    res.status(500).json({ error: "AI summarization failed." });
   }
 };

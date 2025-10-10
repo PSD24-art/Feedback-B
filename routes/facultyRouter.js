@@ -13,6 +13,7 @@ const {
   postFeedbackLink,
   getFeedbackLink,
   deleteFeedbackLink,
+  getFacultySummary,
   getFeedbackCount,
 } = facultyController;
 
@@ -47,4 +48,5 @@ facultyRouter.get("/:id/count/:subject", isAuthenticated, getFeedbackCount);
 facultyRouter.get("/:id/tokens/:code", getToken);
 facultyRouter.route("/:id").get(isAuthenticated, getFaculty);
 
+facultyRouter.post("/:id/faculty-summary", isAuthenticated, getFacultySummary);
 module.exports = facultyRouter;
