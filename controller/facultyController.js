@@ -388,9 +388,16 @@ Avoid numbers, write qualitatively.
     );
 
     const data = await response.json();
-    const summary =
+    let summary =
       data?.choices?.[0]?.message?.content || "No summary generated.";
     console.log("Generated Summary:", summary);
+    summary = summary
+      .replace(/<s>/g, "")
+      .replace(/\[OUT\]/gi, "")
+      .replace(/\[.*?\]/g, "") // removes any bracketed text like [text]
+      .replace(/\\n/g, " ") // removes literal \n
+      .trim();
+
     res.json({ summary });
   } catch (error) {
     console.error("AI Summary Error:", error);

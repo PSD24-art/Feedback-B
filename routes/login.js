@@ -7,16 +7,19 @@ const router = express.Router();
 router.post("/login", passport.authenticate("local"), async (req, res) => {
   const userId = req.user._id;
   const user = await User.findById(userId).populate("institute");
+  // console.log("Logged in user: ", user);
+
   res.json({
     message: "Login successful",
     user: {
-      id: req.user._id,
-      role: req.user.role,
-      username: req.user.username,
+      name: user.name,
+      id: userId,
+      role: user.role,
+      username: user.username,
       Institute: user.institute,
     },
   });
-  console.log("Login success");
+  // console.log("Login success");
 });
 
 router.get("/logout", (req, res, next) => {
