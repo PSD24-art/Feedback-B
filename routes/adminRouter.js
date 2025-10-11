@@ -13,6 +13,7 @@ const {
   deleteFaculty,
   getFeedbackLinkAdmin,
   getFeedbackCountAdmin,
+  getFacultySummary,
 } = adminController;
 
 //get admin details
@@ -52,5 +53,7 @@ adminRouter.delete(
   isAdmin,
   deleteFaculty
 );
+
+adminRouter.post("/:id/faculty-summary", isAdmin, getFacultySummary);
 
 module.exports = adminRouter;

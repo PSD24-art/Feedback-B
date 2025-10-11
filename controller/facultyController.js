@@ -9,6 +9,7 @@ const feedbackCalculator = require("../utils/feedbackCalculator");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 const analyzeRatings = require("../utils/analyzeRatings");
 require("dotenv").config();
+
 exports.getFaculty = async (req, res) => {
   const { id } = req.params;
   console.log("User Id: ", id);
@@ -59,7 +60,7 @@ exports.getFaculty = async (req, res) => {
       avgRating: overallAvgArray[i],
     }));
 
-    console.log("Ratings Objects: ", ratingObjects);
+    // console.log("Ratings Objects: ", ratingObjects);
     const ratingsForAi = analyzeRatings(ratingObjects);
     console.log("ratings for AI Subjects: ", ratingsForAi);
 
@@ -379,7 +380,7 @@ Avoid numbers, write qualitatively.
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "mistralai/mistral-7b-instruct", // you can also use 'gpt-3.5-turbo'
+          model: "openai/gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
           max_tokens: 300,
@@ -394,8 +395,8 @@ Avoid numbers, write qualitatively.
     summary = summary
       .replace(/<s>/g, "")
       .replace(/\[OUT\]/gi, "")
-      .replace(/\[.*?\]/g, "") // removes any bracketed text like [text]
-      .replace(/\\n/g, " ") // removes literal \n
+      .replace(/\[.*?\]/g, "")
+      .replace(/\\n/g, " ")
       .trim();
 
     res.json({ summary });

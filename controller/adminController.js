@@ -3,11 +3,12 @@ const Subject = require("../models/subject");
 const FeedbackLink = require("../models/feedbackLink");
 const Feedback = require("../models/feedback");
 const Institute = require("../models/institute");
-
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API;
 const validator = require("validator");
 const nodemailer = require("nodemailer");
 const feedbackCalculator = require("../utils/feedbackCalculator");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
+const analyzeRatings = require("../utils/analyzeRatings");
 require("dotenv").config();
 exports.getFaculties = async (req, res) => {
   const { id } = req.params;
@@ -148,8 +149,10 @@ exports.getOneFaculty = async (req, res) => {
         avgRating: overallAvgArray[i],
       }));
 
-      console.log("Ratings Objects: ", ratingObjects);
-      res.json({ faculty, subject, ratingObjects, totalRating });
+      // console.log("Ratings Objects: ", ratingObjects);
+      const ratingsForAi = analyzeRatings(ratingObjects);
+      console.log("ratings for AI Subjects: ", ratingsForAi);
+      res.json({ faculty, subject, ratingObjects, totalRating, ratingsForAi });
     } catch (e) {
       console.log(e.message);
       res.json({ error: e.message });
@@ -205,10 +208,86 @@ exports.getFeedbackCountAdmin = async (req, res) => {
           ratings: "No ratings found",
         });
       console.log("Found feedbacks:", result.length);
-      res.json({ ratings, FeedbackLength: result.length });
+      const fallbackRatings = [
+        { criteria: "Communication" },
+        { criteria: "Knowledge" },
+        { criteria: "Engagement" },
+        { criteria: "Punctuality" },
+        { criteria: "Doubt Solving" },
+      ];
+
+      const dataset =
+        Array.isArray(ratings) && ratings.length > 0
+          ? fallbackRatings.map((item, i) => ({
+              criteria: item.criteria,
+              avgRating: Number(ratings[i]) || 0,
+            }))
+          : fallbackRatings;
+
+      const criteriaRatingsAi = analyzeRatings(dataset);
+      res.json({ ratings, FeedbackLength: result.length, criteriaRatingsAi });
     } catch (e) {
       console.error("Error in getFeedbackCount:", e);
       res.status(500).json({ error: e.message });
     }
+  }
+};
+
+exports.getFacultySummary = async (req, res) => {
+  try {
+    const { facultyName, criteriaAnalysis, subjectAnalysis } = req.body;
+
+    const prompt = `
+You are an AI evaluator assessing a faculty member based on feedback data.
+
+Faculty Name: ${facultyName}
+
+Criteria Analysis:
+Average Rating: ${criteriaAnalysis.avg} (${criteriaAnalysis.performanceLevel})
+Strongest Area: ${criteriaAnalysis.strongest.criteria} (${criteriaAnalysis.strongest.avgRating})
+Weakest Area: ${criteriaAnalysis.weakest.criteria} (${criteriaAnalysis.weakest.avgRating})
+
+Subject Analysis:
+Average Rating: ${subjectAnalysis.avg} (${subjectAnalysis.performanceLevel})
+Best Subject: ${subjectAnalysis.strongest.subjectName} (${subjectAnalysis.strongest.avgRating})
+Weakest Subject: ${subjectAnalysis.weakest.subjectName} (${subjectAnalysis.weakest.avgRating})
+
+Task:
+Write a 4–6 line professional summary describing the faculty’s performance.
+Highlight strengths, areas for improvement, and end with an overall remark (Excellent / Good / Needs Improvement).
+Avoid numbers, write qualitatively.
+`;
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "mistralai/mistral-7b-instruct",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 300,
+        }),
+      }
+    );
+
+    const data = await response.json();
+    let summary =
+      data?.choices?.[0]?.message?.content || "No summary generated.";
+    console.log("Generated Summary:", summary);
+    summary = summary
+      .replace(/<s>/g, "")
+      .replace(/\[OUT\]/gi, "")
+      .replace(/\[.*?\]/g, "")
+      .replace(/\\n/g, " ")
+      .trim();
+
+    res.json({ summary });
+  } catch (error) {
+    console.error("AI Summary Error:", error);
+    res.status(500).json({ error: "AI summarization failed." });
   }
 };
