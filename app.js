@@ -26,13 +26,10 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://feedback-guru-f.onrender.com",
-      "http://192.168.1.6:5173",
-    ],
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );
