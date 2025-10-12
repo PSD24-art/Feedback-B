@@ -55,11 +55,11 @@ const criteriWiseCharts = (feedbacks) => {
   const avgParam4 = safeAverage(p4Arr);
   const avgParam5 = safeAverage(p5Arr);
 
-  console.log("avgParam1", avgParam1);
-  console.log("avgParam2", avgParam2);
-  console.log("avgParam3", avgParam3);
-  console.log("avgParam4", avgParam4);
-  console.log("avgParam5", avgParam5);
+  // console.log("avgParam1", avgParam1);
+  // console.log("avgParam2", avgParam2);
+  // console.log("avgParam3", avgParam3);
+  // console.log("avgParam4", avgParam4);
+  // console.log("avgParam5", avgParam5);
 
   const criteriArr = [
     Number(avgParam1).toFixed(2),
@@ -68,7 +68,7 @@ const criteriWiseCharts = (feedbacks) => {
     Number(avgParam4).toFixed(2),
     Number(avgParam5).toFixed(2),
   ];
-  console.log(criteriArr);
+  // console.log(criteriArr);
 
   return criteriArr;
 };

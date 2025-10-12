@@ -41,7 +41,7 @@ const addSubject = async () => {
     });
 
     let res = await subject.save();
-    console.log("Subject Saved:", res);
+    // console.log("Subject Saved:", res);
   } catch (err) {
     console.log("Error:", err);
   }

@@ -12,7 +12,7 @@ require("dotenv").config();
 
 exports.getFaculty = async (req, res) => {
   const { id } = req.params;
-  console.log("User Id: ", id);
+  // console.log("User Id: ", id);
 
   if (req.user._id.toString() !== id) {
     return res.status(403).json({ error: "Unauthorized access" });
@@ -52,7 +52,7 @@ exports.getFaculty = async (req, res) => {
     }
 
     const totalRating = (sumOfAvg / overallAvgArray.length).toFixed(2);
-    console.log("Total ratings: ", totalRating);
+    // console.log("Total ratings: ", totalRating);
 
     // response object
     const ratingObjects = subjectNames.map((name, i) => ({
@@ -62,7 +62,7 @@ exports.getFaculty = async (req, res) => {
 
     // console.log("Ratings Objects: ", ratingObjects);
     const ratingsForAi = analyzeRatings(ratingObjects);
-    console.log("ratings for AI Subjects: ", ratingsForAi);
+    // console.log("ratings for AI Subjects: ", ratingsForAi);
 
     //  Send response
     res.json({ faculty, ratingObjects, totalRating, ratingsForAi });
@@ -94,7 +94,7 @@ exports.putSubject = async (req, res) => {
     }
 
     const result = await subject.save();
-    console.log("Put subject", result);
+    // console.log("Put subject", result);
 
     res.json({ subjectWithFaculty: subject });
   }
@@ -230,7 +230,7 @@ exports.postFeedbackLink = async (req, res) => {
 
   try {
     const { subject, link } = req.body;
-    console.log("subject", subject);
+    // console.log("subject", subject);
     // Verify faculty exists
     const faculty = await User.findById(id);
     if (!faculty) {
@@ -267,7 +267,7 @@ exports.deleteFeedbackLink = async (req, res) => {
   }
   try {
     const result = await FeedbackLink.findByIdAndDelete(link);
-    console.log("deleted Link", result);
+    // console.log("deleted Link", result);
     res.json({ message: "Link deleted Successfully" });
   } catch (e) {
     console.log(e);
@@ -337,7 +337,7 @@ exports.getFeedbackCount = async (req, res) => {
         : fallbackRatings;
 
     const criteriaRatingsAi = analyzeRatings(dataset);
-    console.log("criteria Rastings AI: ", criteriaRatingsAi);
+    // console.log("criteria Rastings AI: ", criteriaRatingsAi);
     res.json({ FeedbackLength: result.length, ratings, criteriaRatingsAi });
   } catch (e) {
     console.error("Error in getFeedbackCount:", e);
@@ -391,7 +391,7 @@ Avoid numbers, write qualitatively.
     const data = await response.json();
     let summary =
       data?.choices?.[0]?.message?.content || "No summary generated.";
-    console.log("Generated Summary:", summary);
+    // console.log("Generated Summary:", summary);
     summary = summary
       .replace(/<s>/g, "")
       .replace(/\[OUT\]/gi, "")

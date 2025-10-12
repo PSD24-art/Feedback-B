@@ -28,7 +28,11 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://feedback-guru-f.onrender.com"],
+    origin: [
+      "http://localhost:5173",
+      "https://feedback-guru-f.onrender.com",
+      "http://192.168.1.6:5173",
+    ],
     credentials: true,
   })
 );
@@ -70,7 +74,7 @@ mongoose
 
 // Routes
 app.get("/", (req, res) => {
-  console.log(req);
+  // console.log(req);
   res.send("Root is working");
 });
 

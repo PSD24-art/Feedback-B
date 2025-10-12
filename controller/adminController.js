@@ -56,7 +56,6 @@ exports.postFaculty = async (req, res) => {
     const defPass = "defaultPassword";
 
     try {
-      console.log("Checking existing faculty...");
       const checkExistingFaculty = await User.findOne({ username });
       if (checkExistingFaculty) {
         return res
@@ -64,10 +63,9 @@ exports.postFaculty = async (req, res) => {
           .json({ message: "User exists with same email id" });
       }
 
-      console.log("Registering new faculty...");
       const result = await User.register(newFaculty, defPass);
 
-      console.log("User registered:", result);
+      // console.log("User registered:", result);
 
       // //Setup Nodemailer transport
       // const transporter = nodemailer.createTransport({
@@ -141,7 +139,7 @@ exports.getOneFaculty = async (req, res) => {
       }
 
       const totalRating = (sumOfAvg / overallAvgArray.length).toFixed(2);
-      console.log("Total ratings: ", totalRating);
+      // console.log("Total ratings: ", totalRating);
 
       // response object
       const ratingObjects = subjectNames.map((name, i) => ({
@@ -151,7 +149,7 @@ exports.getOneFaculty = async (req, res) => {
 
       // console.log("Ratings Objects: ", ratingObjects);
       const ratingsForAi = analyzeRatings(ratingObjects);
-      console.log("ratings for AI Subjects: ", ratingsForAi);
+      // console.log("ratings for AI Subjects: ", ratingsForAi);
       res.json({ faculty, subject, ratingObjects, totalRating, ratingsForAi });
     } catch (e) {
       console.log(e.message);
@@ -207,7 +205,7 @@ exports.getFeedbackCountAdmin = async (req, res) => {
           FeedbackLength: result.length,
           ratings: "No ratings found",
         });
-      console.log("Found feedbacks:", result.length);
+      // console.log("Found feedbacks:", result.length);
       const fallbackRatings = [
         { criteria: "Communication" },
         { criteria: "Knowledge" },
@@ -277,7 +275,7 @@ Avoid numbers, write qualitatively.
     const data = await response.json();
     let summary =
       data?.choices?.[0]?.message?.content || "No summary generated.";
-    console.log("Generated Summary:", summary);
+    // console.log("Generated Summary:", summary);
     summary = summary
       .replace(/<s>/g, "")
       .replace(/\[OUT\]/gi, "")
