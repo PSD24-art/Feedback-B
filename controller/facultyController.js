@@ -308,8 +308,21 @@ exports.getFeedbackCount = async (req, res) => {
     if (result.length === 0) {
       return res.json({
         message: "No Data yet",
-        Feedbacks: [],
         FeedbackLength: 0,
+        ratings: [
+          {
+            parameter1: { q1: 1, q2: 2 },
+            parameter2: { q1: 4, q2: 3, q3: 3 },
+            parameter3: { q1: 3, q2: 4, q3: 4 },
+            parameter4: { q1: 4, q2: 4, q3: 2 },
+            parameter5: { q1: 1, q2: 5, q3: 3 },
+            overallEffectiveness: 4,
+            strengths: "2",
+            improvements: "1",
+            additionalComments: "1",
+            __v: 0,
+          },
+        ],
       });
     }
     const ratings = criteriWiseCharts(result);
