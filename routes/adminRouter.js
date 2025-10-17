@@ -47,12 +47,7 @@ adminRouter.get(
 adminRouter.post("/:id/faculties/new", isAdmin, postFaculty);
 
 //delete faculty
-adminRouter.delete(
-  "/:id/faculties/:facultyId",
-
-  isAdmin,
-  deleteFaculty
-);
+adminRouter.delete("/:id/faculties/:facultyId", isAdmin, deleteFaculty);
 
 adminRouter.post("/:id/faculty-summary", isAdmin, getFacultySummary);
 
