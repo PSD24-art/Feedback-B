@@ -153,8 +153,22 @@ exports.postSubject = async (req, res) => {
 
 exports.getToken = async (req, res) => {
   const { id, code } = req.params;
+
   try {
+    //Token generation code
     const subject = await Subject.findOne({ unique_code: code });
+    const feedbacks = await Feedback.find({
+      faculty: id,
+      subject: subject._id,
+    });
+
+    const feedbackLink = await FeedbackLink.find({
+      faculty: id,
+      subject: subject._id,
+    });
+
+    console.log("feedbackLink: ", feedbackLink);
+
     const faculty = await User.findById(id);
 
     if (!subject || !faculty) {
@@ -229,8 +243,7 @@ exports.postFeedbackLink = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { subject, link } = req.body;
-    // console.log("subject", subject);
+    const { subject, link, limit } = req.body;
     // Verify faculty exists
     const faculty = await User.findById(id);
     if (!faculty) {
@@ -250,6 +263,7 @@ exports.postFeedbackLink = async (req, res) => {
       faculty: faculty._id,
       link,
       subject,
+      limit,
     });
 
     const result = await newLink.save();

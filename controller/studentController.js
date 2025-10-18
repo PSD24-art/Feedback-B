@@ -1,4 +1,5 @@
 const Feedback = require("../models/feedback");
+const FeedbackLink = require("../models/feedbackLink");
 const Token = require("../models/token");
 
 //Createa route which will identify the existing for or token is generated again same faculty subect and student roll, otherwise student will fill full form and after submitting he finds that the form is already submitted
@@ -12,11 +13,31 @@ exports.checkFeedback = async (req, res) => {
 
   const { studentRoll } = req.body;
 
+  //check limit
+  const feedbackLink = await FeedbackLink({
+    faculty: recievedToken.faculty,
+    subject: recievedToken.subject,
+  });
+
+  if (!feedbackLink) {
+    return res.status(404).json({ error: "Feedback Link not found" });
+  }
+
   const existingFeedback = await Feedback.findOne({
     studentRoll,
     faculty: recievedToken.faculty,
     subject: recievedToken.subject,
   });
+
+  const limit = feedbackLink.limit;
+  const feedbacks = await Feedback.find({
+    faculty: recievedToken.faculty,
+    subject: recievedToken.subject,
+  });
+
+  if (feedbacks && feedbacks.lngth === limit) {
+    return res.json({ message: false, text: "Feedback limit exceeded" });
+  }
 
   if (existingFeedback) {
     return res.status(400).json({

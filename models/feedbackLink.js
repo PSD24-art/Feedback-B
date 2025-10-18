@@ -11,6 +11,7 @@ const fblinkSchema = new Schema({
   faculty: { type: Schema.Types.ObjectId, ref: "Faculty" },
   subject: { type: Schema.Types.ObjectId, ref: "Subject" },
   link: { type: String, required: true },
+  limit: { type: Number, max: 100 },
 });
 
 const FeedbackLink = mongoose.model("FeedbackLink", fblinkSchema);
