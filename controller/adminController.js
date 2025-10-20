@@ -32,6 +32,81 @@ exports.getFaculties = async (req, res) => {
     }
   }
 };
+exports.deleteSubjects = async (req, res) => {
+  const { id, subjectId } = req.params;
+  if (req.user._id.toString() === id) {
+    const subject = await Subject.findByIdAndDelete(subjectId);
+    console.log(subject);
+    if (subject) {
+      res.json({ message: `${subject.name} deleted successfully` });
+    }
+  }
+};
+exports.postSubject = async (req, res) => {
+  const { id } = req.params;
+
+  if (req.user._id.toString() !== id) {
+    return res.status(403).json({ error: "Unauthorized access" });
+  }
+
+  try {
+    const admin = await User.findById(id);
+    if (!admin) {
+      return res.status(404).json({ error: "User not found!" });
+    }
+
+    const { name, code, department, semester } = req.body;
+
+    // unique code (department + semester + code)
+    const unique_code = `${department}${semester}${code}`;
+
+    // check existing subject
+    const findExistingSubject = await Subject.findOne({ unique_code });
+    if (findExistingSubject) {
+      return res.status(400).json({ error: "Subject already exists!" });
+    }
+
+    // create new subject
+    const newSubject = new Subject({
+      name,
+      code,
+      department,
+      semester,
+      unique_code,
+      institute: admin.institute,
+      created_by: admin._id,
+    });
+
+    const savedSubject = await newSubject.save();
+
+    res.status(201).json({
+      message: "Subject saved successfully!",
+      subject: savedSubject,
+      created_by: admin,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Failed to save subject",
+      error: err.message,
+    });
+  }
+};
+
+exports.getSubjects = async (req, res) => {
+  const { id, dept } = req.params;
+  if (req.user._id.toString() === id) {
+    const allSubjects = await Subject.find({ department: dept }).populate(
+      "created_by",
+      "name"
+    );
+    if (allSubjects) {
+      res.json({ subjects: allSubjects });
+    } else {
+      res.status(404).json({ message: "Subjects not found" });
+    }
+  }
+};
 
 exports.postFaculty = async (req, res) => {
   const { id } = req.params;

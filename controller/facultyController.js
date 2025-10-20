@@ -167,8 +167,6 @@ exports.getToken = async (req, res) => {
       subject: subject._id,
     });
 
-    console.log("feedbackLink: ", feedbackLink);
-
     const faculty = await User.findById(id);
 
     if (!subject || !faculty) {

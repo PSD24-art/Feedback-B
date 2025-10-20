@@ -14,6 +14,9 @@ const {
   getFeedbackLinkAdmin,
   getFeedbackCountAdmin,
   getFacultySummary,
+  getSubjects,
+  postSubject,
+  deleteSubjects,
 } = adminController;
 
 //get admin details
@@ -48,7 +51,11 @@ adminRouter.post("/:id/faculties/new", isAdmin, postFaculty);
 
 //delete faculty
 adminRouter.delete("/:id/faculties/:facultyId", isAdmin, deleteFaculty);
+adminRouter.route("/:id/subjects/:dept").get(isAdmin, getSubjects);
+adminRouter.route("/:id/subject").post(isAdmin, postSubject);
 
+postSubject;
+adminRouter.delete("/:id/subjects/:subjectId", isAdmin, deleteSubjects);
 adminRouter.post("/:id/faculty-summary", isAdmin, getFacultySummary);
 
 module.exports = adminRouter;
