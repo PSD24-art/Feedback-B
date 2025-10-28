@@ -9,20 +9,21 @@ const nodemailer = require("nodemailer");
 const feedbackCalculator = require("../utils/feedbackCalculator");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 const analyzeRatings = require("../utils/analyzeRatings");
+const percentageForPie = require("../utils/percentageForPie");
 require("dotenv").config();
+
 exports.getFaculties = async (req, res) => {
-  const { id } = req.params;
+  const { id, dept } = req.params;
   if (req.user._id.toString() === id) {
     try {
       let admin = await User.findById(id).populate("institute", "name code");
       const instituteId = admin.institute;
-      // const institute = await Institute.findById(instituteId);
-      // console.log(institute);
       const allFaculties = await User.find({
         role: "faculty",
         institute: instituteId,
+        department: dept,
       });
-      // console.log(allFaculties);
+
       res.json({ admin, allFaculties });
     } catch (e) {
       res.status(404).json({
@@ -225,7 +226,13 @@ exports.getOneFaculty = async (req, res) => {
       // console.log("Ratings Objects: ", ratingObjects);
       const ratingsForAi = analyzeRatings(ratingObjects);
       // console.log("ratings for AI Subjects: ", ratingsForAi);
-      res.json({ faculty, subject, ratingObjects, totalRating, ratingsForAi });
+      res.json({
+        faculty,
+        subject,
+        ratingObjects,
+        totalRating,
+        ratingsForAi,
+      });
     } catch (e) {
       console.log(e.message);
       res.json({ error: e.message });
@@ -262,47 +269,64 @@ exports.getFeedbackLinkAdmin = async (req, res) => {
 //Controller for getting feedback docs and count
 exports.getFeedbackCountAdmin = async (req, res) => {
   const { id, facultyId, subject } = req.params;
-  if (req.user._id.toString() === id) {
-    try {
-      const result = await Feedback.find({ faculty: facultyId, subject });
 
-      if (result.length === 0) {
-        return res.json({
-          message: "No Data yet",
-          Feedbacks: [],
-          FeedbackLength: 0,
-        });
-      }
-      const ratings = criteriWiseCharts(result);
+  //  Ensure only authorized admin can access
+  if (req.user._id.toString() !== id) {
+    return res.status(403).json({ error: "Unauthorized access" });
+  }
 
-      if (!ratings)
-        return res.json({
-          FeedbackLength: result.length,
-          ratings: "No ratings found",
-        });
-      // console.log("Found feedbacks:", result.length);
-      const fallbackRatings = [
-        { criteria: "Communication" },
-        { criteria: "Knowledge" },
-        { criteria: "Engagement" },
-        { criteria: "Punctuality" },
-        { criteria: "Doubt Solving" },
-      ];
+  try {
+    //  Fetch all feedbacks for the given faculty & subject
+    const feedbacks = await Feedback.find({ faculty: facultyId, subject });
 
-      const dataset =
-        Array.isArray(ratings) && ratings.length > 0
-          ? fallbackRatings.map((item, i) => ({
-              criteria: item.criteria,
-              avgRating: Number(ratings[i]) || 0,
-            }))
-          : fallbackRatings;
-
-      const criteriaRatingsAi = analyzeRatings(dataset);
-      res.json({ ratings, FeedbackLength: result.length, criteriaRatingsAi });
-    } catch (e) {
-      console.error("Error in getFeedbackCount:", e);
-      res.status(500).json({ error: e.message });
+    if (feedbacks.length === 0) {
+      return res.json({
+        message: "No Data yet",
+        Feedbacks: [],
+        FeedbackLength: 0,
+      });
     }
+
+    //  Ratings by criteria (bar chart data)
+    const ratings = criteriWiseCharts(feedbacks);
+
+    //  Fallback structure
+    const fallbackRatings = [
+      { criteria: "Communication" },
+      { criteria: "Knowledge" },
+      { criteria: "Engagement" },
+      { criteria: "Punctuality" },
+      { criteria: "Doubt Solving" },
+    ];
+
+    const dataset =
+      Array.isArray(ratings) && ratings.length > 0
+        ? fallbackRatings.map((item, i) => ({
+            criteria: item.criteria,
+            avgRating: Number(ratings[i]) || 0,
+          }))
+        : fallbackRatings.map((item) => ({
+            criteria: item.criteria,
+            avgRating: 0,
+          }));
+
+    //  Calculate rating percentage distribution for pie/donut chart
+    // If feedbackArrays is just one array of feedbacks (not multiple), use feedbacks directly
+    const { ratingPercentages } = percentageForPie(feedbacks);
+
+    //  AI/summary analysis (optional)
+    const criteriaRatingsAi = analyzeRatings(dataset);
+
+    //  Final JSON response
+    res.json({
+      FeedbackLength: feedbacks.length,
+      ratings: dataset,
+      ratingPercentage: ratingPercentages, // for pie chart
+      criteriaRatingsAi,
+    });
+  } catch (e) {
+    console.error("Error in getFeedbackCountAdmin:", e);
+    res.status(500).json({ error: e.message });
   }
 };
 
@@ -362,5 +386,11 @@ Avoid numbers, write qualitatively.
   } catch (error) {
     console.error("AI Summary Error:", error);
     res.status(500).json({ error: "AI summarization failed." });
+  }
+};
+
+exports.getPieChartData = (req, res) => {
+  const { id, facultyId } = req.params;
+  if (req.user._id.toString() === id) {
   }
 };

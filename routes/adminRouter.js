@@ -20,7 +20,7 @@ const {
 } = adminController;
 
 //get admin details
-adminRouter.get("/:id", isAdmin, getFaculties);
+adminRouter.get("/:id/:dept", isAdmin, getFaculties);
 //get all faculties
 
 //by clicking individual faculty admin redirects to link get-/faculty/:id
@@ -43,7 +43,6 @@ adminRouter.get(
 adminRouter.get(
   "/:id/faculties/:facultyId/feedback/:subject",
   isAdmin,
-
   getFeedbackCountAdmin
 );
 //add faculty
@@ -51,6 +50,7 @@ adminRouter.post("/:id/faculties/new", isAdmin, postFaculty);
 
 //delete faculty
 adminRouter.delete("/:id/faculties/:facultyId", isAdmin, deleteFaculty);
+
 adminRouter.route("/:id/subjects/:dept").get(isAdmin, getSubjects);
 adminRouter.route("/:id/subject").post(isAdmin, postSubject);
 

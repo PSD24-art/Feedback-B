@@ -8,6 +8,7 @@ const PORT = 3420;
 const feedbackCalculator = require("../utils/feedbackCalculator");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 const analyzeRatings = require("../utils/analyzeRatings");
+const percentageForPie = require("../utils/percentageForPie");
 require("dotenv").config();
 
 exports.getFaculty = async (req, res) => {
@@ -315,9 +316,9 @@ exports.getFeedbackCount = async (req, res) => {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    const result = await Feedback.find({ faculty: id, subject });
+    const feedbacks = await Feedback.find({ faculty: id, subject });
 
-    if (result.length === 0) {
+    if (feedbacks.length === 0) {
       return res.json({
         message: "No Data yet",
         FeedbackLength: 0,
@@ -337,11 +338,11 @@ exports.getFeedbackCount = async (req, res) => {
         ],
       });
     }
-    const ratings = criteriWiseCharts(result);
+    const ratings = criteriWiseCharts(feedbacks);
 
     if (!ratings)
       return res.json({
-        FeedbackLength: result.length,
+        FeedbackLength: feedbacks.length,
         ratings: "No ratings found",
       });
 
@@ -361,9 +362,16 @@ exports.getFeedbackCount = async (req, res) => {
           }))
         : fallbackRatings;
 
+    const { ratingPercentages } = percentageForPie(feedbacks);
+
     const criteriaRatingsAi = analyzeRatings(dataset);
     // console.log("criteria Rastings AI: ", criteriaRatingsAi);
-    res.json({ FeedbackLength: result.length, ratings, criteriaRatingsAi });
+    res.json({
+      FeedbackLength: feedbacks.length,
+      ratings: dataset,
+      criteriaRatingsAi,
+      ratingPercentage: ratingPercentages,
+    });
   } catch (e) {
     console.error("Error in getFeedbackCount:", e);
     res.status(500).json({ error: e.message });
