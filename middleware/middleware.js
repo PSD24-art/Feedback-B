@@ -11,3 +11,10 @@ module.exports.isAdmin = (req, res, next) => {
   }
   res.status(403).json({ message: "Access denied: Admins only" });
 };
+
+module.exports.isSuperAdmin = (req, res, next) => {
+  if (req.isAuthenticated() && req.user && req.user.role === "superAdmin") {
+    return next();
+  }
+  res.status(403).json({ message: "Access denied: Super Admins only" });
+};

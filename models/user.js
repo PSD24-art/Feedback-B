@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = require("mongoose");
 const passportLocalMongoose = require("passport-local-mongoose");
-// require("dotenv").config({ path: "../.env" });
+require("dotenv").config({ path: "../.env" });
 
 // main()
 //   .then(() => console.log("Databse Connected"))
@@ -17,7 +17,7 @@ const userSchema = new Schema({
   email: { type: String, required: true },
   password: String,
   department: String,
-  institute: { type: Schema.Types.ObjectId, ref: "Institute", required: true },
+  institute: { type: Schema.Types.ObjectId, ref: "Institute" },
   role: { type: String, required: true },
   isPasswordSet: { type: Boolean, default: false },
 });
@@ -58,3 +58,16 @@ module.exports = User;
 //   console.log(newAdmin);
 // };
 // seedAdmin();
+
+// const seedSuperAdmin = async () => {
+//   const admin = new User({
+//     name: "Prathamesh Dahake",
+//     username: "prathamesh@tiet",
+//     email: "pratham.dahakepsd@tietdarapu.in",
+//     role: "superAdmin",
+//     isPasswordSet: false,
+//   });
+//   const newAdmin = await User.register(admin, "defaultPassword");
+//   console.log(newAdmin);
+// };
+// seedSuperAdmin();

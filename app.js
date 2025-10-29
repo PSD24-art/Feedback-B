@@ -16,6 +16,9 @@ const loginRouter = require("./routes/login");
 const Faculty = require("./models/faculty");
 const { isAuthenticated } = require("./middleware/middleware");
 const User = require("./models/user");
+const superAdminRouter = require("./routes/superAdminRouter");
+const Institute = require("./models/institute");
+const InstituteRequest = require("./models/instituteRequests");
 
 const app = express();
 
@@ -81,8 +84,55 @@ app.get("/api/me", isAuthenticated, (req, res) => {
 
 app.use("/api/faculty", facultyRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/superAdmin", superAdminRouter);
 app.use("/api", studentRouter);
 app.use("/api", loginRouter);
+
+app.post("/api/instituteRequest", async (req, res) => {
+  const { formData } = req.body;
+  try {
+    if (!formData) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    const existingData = await Institute.findOne({ name: formData.name });
+
+    if (existingData) {
+      return res.status(404).json({ message: "Institute already Exists" });
+    }
+
+    const newInstitute = new InstituteRequest({
+      name: formData.name,
+      code: formData.code,
+      contactInfo: {
+        email: formData.contactInfo.email,
+        phone: formData.contactInfo.phone,
+        website: formData.contactInfo.website,
+      },
+      address: formData.address,
+      contactPerson: {
+        name: formData.contactPerson.name,
+        mobile: formData.contactPerson.mobile,
+        email: formData.contactPerson.email,
+      },
+    });
+
+    const savedInstitute = await newInstitute.save();
+    console.log("Saved Institute:", savedInstitute);
+
+    res.status(201).json({
+      success: true,
+      message: "Institute request submitted successfully!",
+      data: savedInstitute,
+    });
+  } catch (e) {
+    console.error("Error saving institute:", e);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+    });
+  }
+});
 
 // Error handler
 app.use((err, req, res, next) => {

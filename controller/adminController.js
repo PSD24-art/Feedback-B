@@ -311,7 +311,6 @@ exports.getFeedbackCountAdmin = async (req, res) => {
           }));
 
     //  Calculate rating percentage distribution for pie/donut chart
-    // If feedbackArrays is just one array of feedbacks (not multiple), use feedbacks directly
     const { ratingPercentages } = percentageForPie(feedbacks);
 
     //  AI/summary analysis (optional)
