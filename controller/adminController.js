@@ -111,19 +111,13 @@ exports.getSubjects = async (req, res) => {
 
 exports.postFaculty = async (req, res) => {
   const { id } = req.params;
+
   if (req.user._id.toString() === id) {
     const { name, email, department } = req.body;
-    let username = email.toLowerCase().split("@")[0] + "@tiet";
-    let admin = await User.findById(id);
+
+    const username = email.toLowerCase().split("@")[0] + "@tiet";
+    const admin = await User.findById(id);
     const instituteId = admin.institute;
-    const newFaculty = new User({
-      username,
-      name,
-      email,
-      department,
-      institute: instituteId,
-      role: "faculty",
-    });
 
     if (!validator.isEmail(email)) {
       return res.status(400).json({ error: "Invalid email address" });
@@ -132,41 +126,65 @@ exports.postFaculty = async (req, res) => {
     const defPass = "defaultPassword";
 
     try {
-      const checkExistingFaculty = await User.findOne({ username });
-      if (checkExistingFaculty) {
+      const existing = await User.findOne({ username });
+      if (existing) {
         return res
           .status(409)
-          .json({ message: "User exists with same email id" });
+          .json({ message: "User already exists with same email id" });
       }
+
+      const newFaculty = new User({
+        username,
+        name,
+        email,
+        department,
+        institute: instituteId,
+        role: "faculty",
+      });
 
       const result = await User.register(newFaculty, defPass);
 
-      // console.log("User registered:", result);
-
-      // //Setup Nodemailer transport
       // const transporter = nodemailer.createTransport({
-      //   service: "gmail", // or "hotmail", "yahoo", etc.
+      //   host: process.env.BREVO_HOST,
+      //   port: process.env.BREVO_PORT,
+      //   secure: false,
       //   auth: {
-      //     user: process.env.EMAIL_USER,
-      //     pass: process.env.EMAIL_PASS,
+      //     user: process.env.BREVO_USER,
+      //     pass: process.env.BREVO_PASS,
       //   },
       // });
 
-      // //Send email
-      // const mailOptions = {
-      //   from: `"Feedback Guru" <${process.env.EMAIL_USER}>`,
-      //   to: email,
-      //   subject: "Your User Account Has Been Created",
-      //   text: `Hello ${name},\n\nYour faculty account has been created successfully.\n\nUsername: ${username}\nPassword: ${defPass}\n\nPlease login and change your password.\n\nRegards,\nFeedback Guru`,
-      // };
+      //       const mailOptions = {
+      //         from: `"Feedback Guru" <${process.env.BREVO_USER}>`,
+      //         to: email, // recipient
+      //         subject: "Your Faculty Account Has Been Created",
+      //         text: `Hello ${name},
 
-      // await transporter.sendMail(mailOptions);
+      // Your faculty account has been created successfully.
+
+      // Username: ${username}
+      // Password: ${defPass}
+
+      // Please login and change your password.
+
+      // Regards,
+      // Feedback Guru`,
+      //       };
+
+      // try {
+      //   const info = await transporter.sendMail(mailOptions);
+      //   console.log("Email sent successfully:", info.messageId);
+      // } catch (mailErr) {
+      //   console.error("Email sending failed via Brevo:", mailErr);
+      // }
 
       res.json({ message: "User added successfully & email sent", result });
     } catch (e) {
       console.error("Error in postFaculty:", e);
       res.status(500).json({ error: e.message });
     }
+  } else {
+    res.status(403).json({ error: "Unauthorized action" });
   }
 };
 
@@ -329,6 +347,29 @@ exports.getFeedbackCountAdmin = async (req, res) => {
   }
 };
 
+function extractJSON(text) {
+  if (!text || typeof text !== "string") return null;
+
+  // 1️⃣ Remove ALL markdown code fences (```json, ```JSON, ``` )
+  text = text.replace(/```[\s\S]*?\n/g, "");
+  text = text.replace(/```/g, "").trim();
+
+  // 2️⃣ Extract JSON object safely
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+
+  if (firstBrace === -1 || lastBrace === -1) return null;
+
+  const jsonString = text.slice(firstBrace, lastBrace + 1);
+
+  try {
+    return JSON.parse(jsonString);
+  } catch (err) {
+    console.error("JSON parse failed:", jsonString);
+    return null;
+  }
+}
+
 exports.getFacultySummary = async (req, res) => {
   try {
     const { facultyName, criteriaAnalysis, subjectAnalysis } = req.body;
@@ -340,19 +381,36 @@ Faculty Name: ${facultyName}
 
 Criteria Analysis:
 Average Rating: ${criteriaAnalysis.avg} (${criteriaAnalysis.performanceLevel})
-Strongest Area: ${criteriaAnalysis.strongest.criteria} (${criteriaAnalysis.strongest.avgRating})
-Weakest Area: ${criteriaAnalysis.weakest.criteria} (${criteriaAnalysis.weakest.avgRating})
+Strongest Area: ${criteriaAnalysis.strongest.criteria}
+Weakest Area: ${criteriaAnalysis.weakest.criteria}
 
 Subject Analysis:
 Average Rating: ${subjectAnalysis.avg} (${subjectAnalysis.performanceLevel})
-Best Subject: ${subjectAnalysis.strongest.subjectName} (${subjectAnalysis.strongest.avgRating})
-Weakest Subject: ${subjectAnalysis.weakest.subjectName} (${subjectAnalysis.weakest.avgRating})
+Best Subject: ${subjectAnalysis.strongest.subjectName}
+Weakest Subject: ${subjectAnalysis.weakest.subjectName}
 
-Task:
-Write a 4–6 line professional summary describing the faculty’s performance.
-Highlight strengths, areas for improvement, and end with an overall remark (Excellent / Good / Needs Improvement).
-Avoid numbers, write qualitatively.
+TASK:
+Return ONLY valid JSON in the following structure.
+
+{
+  "points": [
+    {
+      "title": "string",
+      "type": "strength | improvement | overall",
+      "description": "qualitative explanation without numbers"
+    }
+  ]
+}
+
+Rules:
+- Write 4–6 points
+- Each point must be independent (can be shown as a separate card)
+- Avoid numbers completely
+- Use professional, constructive language
+- End with ONE overall remark with type = "overall"
+- Do not include any extra text outside JSON
 `;
+
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
       {
@@ -365,23 +423,25 @@ Avoid numbers, write qualitatively.
           model: "mistralai/mistral-7b-instruct",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
-          max_tokens: 300,
+          max_tokens: 600,
         }),
       }
     );
 
     const data = await response.json();
-    let summary =
-      data?.choices?.[0]?.message?.content || "No summary generated.";
-    // console.log("Generated Summary:", summary);
-    summary = summary
-      .replace(/<s>/g, "")
-      .replace(/\[OUT\]/gi, "")
-      .replace(/\[.*?\]/g, "")
-      .replace(/\\n/g, " ")
-      .trim();
+    const content = data?.choices?.[0]?.message?.content;
 
-    res.json({ summary });
+    const parsed = extractJSON(content);
+
+    if (!parsed || !Array.isArray(parsed.points)) {
+      console.error("Invalid AI JSON:", content);
+      return res.status(500).json({
+        error: "AI returned invalid structured data",
+        points: [],
+      });
+    }
+
+    res.json({ points: parsed.points });
   } catch (error) {
     console.error("AI Summary Error:", error);
     res.status(500).json({ error: "AI summarization failed." });

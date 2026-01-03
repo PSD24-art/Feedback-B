@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = require("mongoose");
 const passportLocalMongoose = require("passport-local-mongoose");
-require("dotenv").config({ path: "../.env" });
+// require("dotenv").config({ path: "../.env" });
 
 // main()
 //   .then(() => console.log("Databse Connected"))
