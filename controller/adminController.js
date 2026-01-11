@@ -189,72 +189,78 @@ exports.postFaculty = async (req, res) => {
 };
 
 exports.getOneFaculty = async (req, res) => {
-  const { id, facultyId } = req.params;
-  if (req.user._id.toString() === id) {
-    try {
-      let faculty = await User.findById(facultyId);
-      const subject = await Subject.find({ faculty: faculty._id });
-      if (!subject) {
-        res.status(404).json({ error: "no subjects to fetch" });
-      }
-      if (!faculty) {
-        res.status(404).json({ error: "no subjects to fetch" });
-      }
+  const { id, facultyId, term } = req.params;
 
-      // all feedback links created by this faculty
-      const feedbackLinks = await FeedbackLink.find({ faculty: facultyId });
-      const subjectIds = feedbackLinks.map((link) => link.subject.toString());
+  if (req.user._id.toString() !== id) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
 
-      //  subject names
-      const subjectNames = await Promise.all(
-        subjectIds.map(async (sid) => {
-          const subject = await Subject.findById(sid);
-          return subject ? subject.name : "Unknown Subject";
-        })
-      );
-
-      // Fetch feedbacks per subject
-      const feedbackArrays = await Promise.all(
-        subjectIds.map((sid) =>
-          Feedback.find({ faculty: facultyId, subject: sid })
-        )
-      );
-
-      // Calculate average ratings
-      const overallAvgArray = feedbackArrays.map((feedbackArr) => {
-        if (!feedbackArr.length) return 0;
-        const avg = feedbackCalculator(feedbackArr);
-        return Number.isNaN(avg) ? 0 : Number(avg.toFixed(2));
-      });
-
-      let sumOfAvg = 0;
-      for (let i = 0; i < overallAvgArray.length; i++) {
-        sumOfAvg = sumOfAvg + overallAvgArray[i];
-      }
-
-      const totalRating = (sumOfAvg / overallAvgArray.length).toFixed(2);
-      // console.log("Total ratings: ", totalRating);
-
-      // response object
-      const ratingObjects = subjectNames.map((name, i) => ({
-        subjectName: name,
-        avgRating: overallAvgArray[i],
-      }));
-
-      // console.log("Ratings Objects: ", ratingObjects);
-      const ratingsForAi = analyzeRatings(ratingObjects);
-      // console.log("ratings for AI Subjects: ", ratingsForAi);
-      res.json({
-        faculty,
-        subject,
-        ratingObjects,
-        totalRating,
-        ratingsForAi,
-      });
-    } catch (e) {
-      console.log(e.message);
-      res.json({ error: e.message });
+  try {
+    const faculty = await User.findById(facultyId);
+    if (!faculty) {
+      return res.status(404).json({ error: "Faculty not found" });
     }
+
+    const filter = { faculty: facultyId };
+    if (term !== "ALL") {
+      filter.term = term;
+    }
+    const feedbackLinks = await FeedbackLink.find(filter).populate(
+      "subject",
+      "name unique_code"
+    );
+
+    // console.log("Feedback links:", feedbackLinks);
+
+    if (!feedbackLinks.length) {
+      return res.json({
+        faculty,
+        links: [],
+        ratingObjects: [],
+        totalRating: 0,
+        ratingsForAi: {},
+      });
+    }
+
+    const subjectIds = feedbackLinks.map((link) => link.subject._id);
+
+    const subjectNames = feedbackLinks.map(
+      (link) => link.subject?.name || "Unknown Subject"
+    );
+
+    const feedbackArrays = await Promise.all(
+      subjectIds.map((sid) =>
+        Feedback.find({ faculty: facultyId, subject: sid })
+      )
+    );
+
+    const overallAvgArray = feedbackArrays.map((arr) => {
+      if (!arr.length) return 0;
+      const avg = feedbackCalculator(arr);
+      return Number.isNaN(avg) ? 0 : Number(avg.toFixed(2));
+    });
+
+    const totalRating = (
+      overallAvgArray.reduce((a, b) => a + b, 0) / overallAvgArray.length
+    ).toFixed(2);
+
+    const ratingObjects = subjectNames.map((name, i) => ({
+      subjectName: name,
+      avgRating: overallAvgArray[i],
+    }));
+
+    const ratingsForAi = analyzeRatings(ratingObjects);
+
+    return res.json({
+      faculty,
+      links: feedbackLinks,
+      ratingObjects,
+      totalRating,
+      ratingsForAi,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
   }
 };
 
@@ -285,65 +291,81 @@ exports.getFeedbackLinkAdmin = async (req, res) => {
 };
 
 //Controller for getting feedback docs and count
+const mongoose = require("mongoose");
+
 exports.getFeedbackCountAdmin = async (req, res) => {
   const { id, facultyId, subject } = req.params;
+  const { term } = req.query; // ✅ optional term support
 
-  //  Ensure only authorized admin can access
+  // 🔐 Authorization
   if (req.user._id.toString() !== id) {
     return res.status(403).json({ error: "Unauthorized access" });
   }
 
+  // ✅ Validate ObjectIds
+  if (
+    !mongoose.Types.ObjectId.isValid(facultyId) ||
+    !mongoose.Types.ObjectId.isValid(subject)
+  ) {
+    return res.status(400).json({ error: "Invalid faculty or subject ID" });
+  }
+
   try {
-    //  Fetch all feedbacks for the given faculty & subject
-    const feedbacks = await Feedback.find({ faculty: facultyId, subject });
+    // 🔍 Build query safely
+    const query = {
+      faculty: facultyId,
+      subject,
+    };
+
+    if (term && term !== "ALL") {
+      query.term = term;
+    }
+
+    // 📦 Fetch feedbacks
+    const feedbacks = await Feedback.find(query);
+
+    // 🧱 Fallback criteria structure
+    const fallbackRatings = [
+      { criteria: "Communication", avgRating: 0 },
+      { criteria: "Knowledge", avgRating: 0 },
+      { criteria: "Engagement", avgRating: 0 },
+      { criteria: "Punctuality", avgRating: 0 },
+      { criteria: "Doubt Solving", avgRating: 0 },
+    ];
 
     if (feedbacks.length === 0) {
       return res.json({
-        message: "No Data yet",
-        Feedbacks: [],
         FeedbackLength: 0,
+        ratings: fallbackRatings,
+        ratingPercentage: {},
+        criteriaRatingsAi: {},
       });
     }
 
-    //  Ratings by criteria (bar chart data)
-    const ratings = criteriWiseCharts(feedbacks);
+    // 📊 Criteria-wise averages
+    const rawRatings = criteriWiseCharts(feedbacks);
 
-    //  Fallback structure
-    const fallbackRatings = [
-      { criteria: "Communication" },
-      { criteria: "Knowledge" },
-      { criteria: "Engagement" },
-      { criteria: "Punctuality" },
-      { criteria: "Doubt Solving" },
-    ];
+    const dataset = fallbackRatings.map((item, i) => ({
+      criteria: item.criteria,
+      avgRating: Number(rawRatings?.[i]) || 0,
+    }));
 
-    const dataset =
-      Array.isArray(ratings) && ratings.length > 0
-        ? fallbackRatings.map((item, i) => ({
-            criteria: item.criteria,
-            avgRating: Number(ratings[i]) || 0,
-          }))
-        : fallbackRatings.map((item) => ({
-            criteria: item.criteria,
-            avgRating: 0,
-          }));
-
-    //  Calculate rating percentage distribution for pie/donut chart
+    // 🍩 Percentage for pie/donut
     const { ratingPercentages } = percentageForPie(feedbacks);
 
-    //  AI/summary analysis (optional)
+    // 🤖 AI analysis
     const criteriaRatingsAi = analyzeRatings(dataset);
 
-    //  Final JSON response
-    res.json({
+    // ✅ Consistent response
+    return res.json({
       FeedbackLength: feedbacks.length,
       ratings: dataset,
-      ratingPercentage: ratingPercentages, // for pie chart
+      ratingPercentage: ratingPercentages,
       criteriaRatingsAi,
     });
   } catch (e) {
     console.error("Error in getFeedbackCountAdmin:", e);
-    res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: e.message });
   }
 };
 

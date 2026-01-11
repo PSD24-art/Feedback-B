@@ -25,18 +25,10 @@ adminRouter.get("/:id/:dept", isAdmin, getFaculties);
 
 //by clicking individual faculty admin redirects to link get-/faculty/:id
 
-//get faculty
-adminRouter.get(
-  "/:id/faculties/:facultyId",
-
-  isAdmin,
-  getOneFaculty
-);
 //Faculty Created Links
 adminRouter.get(
   "/:id/faculties/:facultyId/links",
   isAdmin,
-
   getFeedbackLinkAdmin
 );
 //Faculty feedback details
@@ -45,6 +37,9 @@ adminRouter.get(
   isAdmin,
   getFeedbackCountAdmin
 );
+//get faculty
+adminRouter.get("/:id/faculties/:facultyId/:term", isAdmin, getOneFaculty);
+
 //add faculty
 adminRouter.post("/:id/faculties/new", isAdmin, postFaculty);
 

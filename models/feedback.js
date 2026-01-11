@@ -68,6 +68,7 @@ const feedbackSchema = new Schema({
   additionalComments: { type: String },
 
   createdAt: { type: Date, default: Date.now },
+  term: { type: String },
 });
 
 const Feedback = mongoose.model("Feedback", feedbackSchema);

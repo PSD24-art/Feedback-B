@@ -10,6 +10,7 @@ const MongoStore = require("connect-mongo");
 
 // Local Modules
 const studentRouter = require("./routes/studentRouter");
+const dashboardRouter = require("./routes/dashboard");
 const facultyRouter = require("./routes/facultyRouter");
 const adminRouter = require("./routes/adminRouter");
 const loginRouter = require("./routes/login");
@@ -85,6 +86,7 @@ app.get("/api/me", isAuthenticated, (req, res) => {
 app.use("/api/faculty", facultyRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/superAdmin", superAdminRouter);
+app.use("/api/dashboard", dashboardRouter);
 app.use("/api", studentRouter);
 app.use("/api", loginRouter);
 

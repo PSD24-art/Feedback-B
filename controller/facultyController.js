@@ -12,7 +12,9 @@ const percentageForPie = require("../utils/percentageForPie");
 require("dotenv").config();
 
 exports.getFaculty = async (req, res) => {
-  const { id } = req.params;
+  const { id, term } = req.params;
+  // console.log("term: ", term);
+
   // console.log("User Id: ", id);
 
   if (req.user._id.toString() !== id) {
@@ -24,20 +26,23 @@ exports.getFaculty = async (req, res) => {
     if (!faculty) return res.status(404).json({ error: "Faculty not found" });
 
     // all feedback links created by this faculty
-    const feedbackLinks = await FeedbackLink.find({ faculty: id });
-    const subjectIds = feedbackLinks.map((link) => link.subject.toString());
+    const feedbackLinks = await FeedbackLink.find({
+      faculty: id,
+      term: term,
+    }).populate("subject", "name unique_code");
+    // console.log("feedbackLinks:", feedbackLinks);
 
-    //  subject names
-    const subjectNames = await Promise.all(
-      subjectIds.map(async (sid) => {
-        const subject = await Subject.findById(sid);
-        return subject ? subject.name : "Unknown Subject";
-      })
+    const subjectIds = feedbackLinks.map((link) => link.subject._id);
+
+    const subjectNames = feedbackLinks.map(
+      (link) => link.subject?.name || "Unknown Subject"
     );
 
     // Fetch feedbacks per subject
     const feedbackArrays = await Promise.all(
-      subjectIds.map((sid) => Feedback.find({ faculty: id, subject: sid }))
+      subjectIds.map((sid) =>
+        Feedback.find({ faculty: id, subject: sid, term: term })
+      )
     );
 
     // Calculate average ratings
@@ -66,7 +71,13 @@ exports.getFaculty = async (req, res) => {
     // console.log("ratings for AI Subjects: ", ratingsForAi);
 
     //  Send response
-    res.json({ faculty, ratingObjects, totalRating, ratingsForAi });
+    res.json({
+      faculty,
+      ratingObjects,
+      totalRating,
+      ratingsForAi,
+      links: feedbackLinks,
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -242,7 +253,7 @@ exports.postFeedbackLink = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { subject, link, limit } = req.body;
+    const { subject, link, limit, term } = req.body;
     // Verify faculty exists
     const faculty = await User.findById(id);
     if (!faculty) {
@@ -263,6 +274,7 @@ exports.postFeedbackLink = async (req, res) => {
       link,
       subject,
       limit,
+      term,
     });
 
     const result = await newLink.save();
@@ -310,13 +322,13 @@ exports.getFeedbackLink = async (req, res) => {
 
 exports.getFeedbackCount = async (req, res) => {
   try {
-    const { id, subject } = req.params;
+    const { id, subject, term } = req.params;
 
     if (req.user._id.toString() !== id) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    const feedbacks = await Feedback.find({ faculty: id, subject });
+    const feedbacks = await Feedback.find({ faculty: id, subject, term });
 
     if (feedbacks.length === 0) {
       return res.json({
@@ -436,5 +448,50 @@ Avoid numbers, write qualitatively.
   } catch (error) {
     console.error("AI Summary Error:", error);
     res.status(500).json({ error: "AI summarization failed." });
+  }
+};
+
+// GET distinct terms for a faculty
+exports.getFacultyFeedbackTerms = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Faculty ID is required" });
+    }
+
+    const terms = await FeedbackLink.distinct("term", {
+      faculty: id,
+      term: { $exists: true, $ne: "" },
+    });
+
+    return res.status(200).json({ terms });
+  } catch (error) {
+    console.error("Error fetching feedback terms:", error);
+    return res.status(500).json({ error: "Failed to fetch feedback terms" });
+  }
+};
+
+// GET feedback links (optionally filtered by term)
+exports.getFacultyFeedbackLinks = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { term } = req.query;
+
+    const query = { faculty: id };
+
+    // ✅ Apply term filter ONLY if provided
+    if (term) {
+      query.term = term;
+    }
+
+    const links = await FeedbackLink.find(query)
+      .populate("subject", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ links });
+  } catch (error) {
+    console.error("Error fetching feedback links:", error);
+    res.status(500).json({ error: "Failed to fetch feedback links" });
   }
 };

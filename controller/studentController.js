@@ -65,6 +65,7 @@ exports.postFeedback = async (req, res) => {
   }
   try {
     const {
+      term,
       studentName,
       studentRoll,
       parameter1,
@@ -99,6 +100,7 @@ exports.postFeedback = async (req, res) => {
       strengths,
       improvements,
       additionalComments,
+      term: term,
     });
 
     const result = await feedback.save();
