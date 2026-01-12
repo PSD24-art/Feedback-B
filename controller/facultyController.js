@@ -9,6 +9,7 @@ const feedbackCalculator = require("../utils/feedbackCalculator");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 const analyzeRatings = require("../utils/analyzeRatings");
 const percentageForPie = require("../utils/percentageForPie");
+const { extractJSON } = require("../utils/extractjson");
 require("dotenv").config();
 
 exports.getFaculty = async (req, res) => {
@@ -403,19 +404,36 @@ Faculty Name: ${facultyName}
 
 Criteria Analysis:
 Average Rating: ${criteriaAnalysis.avg} (${criteriaAnalysis.performanceLevel})
-Strongest Area: ${criteriaAnalysis.strongest.criteria} (${criteriaAnalysis.strongest.avgRating})
-Weakest Area: ${criteriaAnalysis.weakest.criteria} (${criteriaAnalysis.weakest.avgRating})
+Strongest Area: ${criteriaAnalysis.strongest.criteria}
+Weakest Area: ${criteriaAnalysis.weakest.criteria}
 
 Subject Analysis:
 Average Rating: ${subjectAnalysis.avg} (${subjectAnalysis.performanceLevel})
-Best Subject: ${subjectAnalysis.strongest.subjectName} (${subjectAnalysis.strongest.avgRating})
-Weakest Subject: ${subjectAnalysis.weakest.subjectName} (${subjectAnalysis.weakest.avgRating})
+Best Subject: ${subjectAnalysis.strongest.subjectName}
+Weakest Subject: ${subjectAnalysis.weakest.subjectName}
 
-Task:
-Write a 4–6 line professional summary describing the faculty’s performance.
-Highlight strengths, areas for improvement, and end with an overall remark (Excellent / Good / Needs Improvement).
-Avoid numbers, write qualitatively.
+TASK:
+Return ONLY valid JSON in the following structure.
+
+{
+  "points": [
+    {
+      "title": "string",
+      "type": "strength | improvement | overall",
+      "description": "qualitative explanation without numbers"
+    }
+  ]
+}
+
+Rules:
+- Write 4–6 points
+- Each point must be independent (can be shown as a separate card)
+- Avoid numbers completely
+- Use professional, constructive language
+- End with ONE overall remark with type = "overall"
+- Do not include any extra text outside JSON
 `;
+
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
       {
@@ -425,29 +443,37 @@ Avoid numbers, write qualitatively.
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-3.5-turbo",
+          model: "mistralai/mistral-7b-instruct",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
-          max_tokens: 300,
+          max_tokens: 600,
         }),
       }
     );
 
     const data = await response.json();
-    let summary =
-      data?.choices?.[0]?.message?.content || "No summary generated.";
-    // console.log("Generated Summary:", summary);
-    summary = summary
-      .replace(/<s>/g, "")
-      .replace(/\[OUT\]/gi, "")
-      .replace(/\[.*?\]/g, "")
-      .replace(/\\n/g, " ")
-      .trim();
+    const content = data?.choices?.[0]?.message?.content;
 
-    res.json({ summary });
+    const parsed = extractJSON(content);
+
+    if (!parsed || !Array.isArray(parsed.points)) {
+      console.error("Invalid AI JSON:", content);
+      return res.status(500).json({
+        error: "AI returned invalid structured data",
+        points: [],
+      });
+    }
+
+    res.json({ points: parsed.points });
   } catch (error) {
     console.error("AI Summary Error:", error);
     res.status(500).json({ error: "AI summarization failed." });
+  }
+};
+
+exports.getPieChartData = (req, res) => {
+  const { id, facultyId } = req.params;
+  if (req.user._id.toString() === id) {
   }
 };
 
