@@ -10,6 +10,7 @@
   "author": "Prathamesh-Yash-Kartik-Hrutik",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
