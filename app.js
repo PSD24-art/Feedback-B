@@ -30,7 +30,7 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL = process.env.FRONTEND_URL;
 app.use(
   cors({
     origin: FRONTEND_URL,
@@ -39,24 +39,27 @@ app.use(
 );
 
 // Session
-const isProduction = process.env.NODE_ENV === "production";
-const sessionOptions = {
-  secret: process.env.SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
-    collectionName: "sessions",
-    ttl: 7 * 24 * 60 * 60,
+
+app.use(
+  session({
+    name: "feedback.sid",
+    secret: process.env.SECRET,
+    resave: false,
+    saveUninitialized: false,
+    proxy: true,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      collectionName: "sessions",
+      ttl: 7 * 24 * 60 * 60,
+    }),
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: true, // 🔥 FORCE TRUE
+      sameSite: "none", // 🔥 FORCE NONE
+    },
   }),
-  cookie: {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
-  },
-};
-app.use(session(sessionOptions));
+);
 
 // Passport
 app.use(passport.initialize());
