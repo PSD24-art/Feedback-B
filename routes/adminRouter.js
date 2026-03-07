@@ -29,13 +29,13 @@ adminRouter.get("/:id/:dept", isAdmin, getFaculties);
 adminRouter.get(
   "/:id/faculties/:facultyId/links",
   isAdmin,
-  getFeedbackLinkAdmin
+  getFeedbackLinkAdmin,
 );
 //Faculty feedback details
 adminRouter.get(
   "/:id/faculties/:facultyId/feedback/:subject",
   isAdmin,
-  getFeedbackCountAdmin
+  getFeedbackCountAdmin,
 );
 //get faculty
 adminRouter.get("/:id/faculties/:facultyId/:term", isAdmin, getOneFaculty);

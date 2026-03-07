@@ -3,7 +3,6 @@ const Subject = require("../models/subject");
 const FeedbackLink = require("../models/feedbackLink");
 const Feedback = require("../models/feedback");
 const Institute = require("../models/institute");
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API;
 const validator = require("validator");
 const nodemailer = require("nodemailer");
 const feedbackCalculator = require("../utils/feedbackCalculator");
@@ -99,7 +98,7 @@ exports.getSubjects = async (req, res) => {
   if (req.user._id.toString() === id) {
     const allSubjects = await Subject.find({ department: dept }).populate(
       "created_by",
-      "name"
+      "name",
     );
     if (allSubjects) {
       res.json({ subjects: allSubjects });
@@ -207,7 +206,7 @@ exports.getOneFaculty = async (req, res) => {
     }
     const feedbackLinks = await FeedbackLink.find(filter).populate(
       "subject",
-      "name unique_code"
+      "name unique_code",
     );
 
     // console.log("Feedback links:", feedbackLinks);
@@ -225,13 +224,13 @@ exports.getOneFaculty = async (req, res) => {
     const subjectIds = feedbackLinks.map((link) => link.subject._id);
 
     const subjectNames = feedbackLinks.map(
-      (link) => link.subject?.name || "Unknown Subject"
+      (link) => link.subject?.name || "Unknown Subject",
     );
 
     const feedbackArrays = await Promise.all(
       subjectIds.map((sid) =>
-        Feedback.find({ faculty: facultyId, subject: sid })
-      )
+        Feedback.find({ faculty: facultyId, subject: sid }),
+      ),
     );
 
     const overallAvgArray = feedbackArrays.map((arr) => {
@@ -279,7 +278,7 @@ exports.getFeedbackLinkAdmin = async (req, res) => {
     try {
       const links = await FeedbackLink.find({ faculty: facultyId }).populate(
         "subject",
-        "name unique_code"
+        "name unique_code",
       );
 
       res.json({ links });
@@ -371,6 +370,8 @@ exports.getFeedbackCountAdmin = async (req, res) => {
 };
 
 exports.getFacultySummary = async (req, res) => {
+  console.log("KEY:", process.env.OPENROUTER_API_KEY);
+  console.log("Route hit");
   try {
     const { facultyName, criteriaAnalysis, subjectAnalysis } = req.body;
 
@@ -416,22 +417,34 @@ Rules:
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "mistralai/mistral-7b-instruct",
+          model: "openai/gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
           max_tokens: 600,
         }),
-      }
+      },
     );
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content;
 
-    const parsed = extractJSON(content);
+    if (data.error) {
+      console.error("AI API Error:", data.error);
+      return res.status(500).json({ error: data.error.message });
+    }
+
+    const content = data.choices[0].message.content;
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.error("Invalid JSON from AI:", content);
+    }
 
     if (!parsed || !Array.isArray(parsed.points)) {
       console.error("Invalid AI JSON:", content);
