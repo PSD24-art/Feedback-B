@@ -2,6 +2,7 @@ const express = require("express");
 const adminRouter = express.Router();
 const adminController = require("../controller/adminController");
 const { isAdmin } = require("../middleware/middleware");
+const { generateFacultyReport } = require("../utils/generateReport");
 
 //Flow: admin dashboard(see all faculties with thier names and subjects) -> clicks a faculty to deep dive into his analytics -> sidebar (has options to
 // add a faculty, remove faculty)
@@ -19,6 +20,7 @@ const {
   deleteSubjects,
 } = adminController;
 
+adminRouter.post("/generate-report", isAdmin, generateFacultyReport);
 //get admin details
 adminRouter.get("/:id/:dept", isAdmin, getFaculties);
 //get all faculties

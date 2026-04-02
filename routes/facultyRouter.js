@@ -2,6 +2,7 @@ const express = require("express");
 const facultyRouter = express.Router();
 const facultyController = require("../controller/facultyController");
 const { isAuthenticated } = require("../middleware/middleware");
+const { generateFacultyReport } = require("../utils/generateReport");
 
 const {
   getFaculty,
@@ -22,10 +23,11 @@ const {
 //Flow: faculty -> your subjects -> add subject -> generate Link (Link generated)
 //Search subjects router
 // subject routes with dept/sem
+facultyRouter.post("/generate-report", generateFacultyReport);
 facultyRouter.get(
   "/:id/subject/:dept/:sem",
   isAuthenticated,
-  getSubjectWithDeptSem
+  getSubjectWithDeptSem,
 );
 facultyRouter.get("/:id/subject/:dept", isAuthenticated, getSubjectWithDept);
 
@@ -43,13 +45,13 @@ facultyRouter
 facultyRouter.delete(
   "/:id/feedback/:link",
   isAuthenticated,
-  deleteFeedbackLink
+  deleteFeedbackLink,
 );
 
 facultyRouter.get(
   "/:id/feedback/term",
   isAuthenticated,
-  getFacultyFeedbackTerms
+  getFacultyFeedbackTerms,
 );
 
 facultyRouter.get("/:id/feedbacks", isAuthenticated, getFacultyFeedbackLinks);
@@ -57,7 +59,7 @@ facultyRouter.get("/:id/feedbacks", isAuthenticated, getFacultyFeedbackLinks);
 facultyRouter.get(
   "/:id/count/:subject/:term",
   isAuthenticated,
-  getFeedbackCount
+  getFeedbackCount,
 );
 facultyRouter.get("/:id/tokens/:code", getToken);
 facultyRouter.route("/:id/:term").get(isAuthenticated, getFaculty);

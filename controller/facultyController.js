@@ -2,6 +2,7 @@ const Feedback = require("../models/feedback");
 const FeedbackLink = require("../models/feedbackLink");
 const Subject = require("../models/subject");
 const Token = require("../models/token");
+const ExcelJS = require("exceljs");
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/user");
 const PORT = 3420;
@@ -11,6 +12,11 @@ const analyzeRatings = require("../utils/analyzeRatings");
 const percentageForPie = require("../utils/percentageForPie");
 const { extractJSON } = require("../utils/extractjson");
 require("dotenv").config();
+
+
+
+
+
 
 exports.getFaculty = async (req, res) => {
   const { id, term } = req.params;
@@ -36,14 +42,14 @@ exports.getFaculty = async (req, res) => {
     const subjectIds = feedbackLinks.map((link) => link.subject._id);
 
     const subjectNames = feedbackLinks.map(
-      (link) => link.subject?.name || "Unknown Subject"
+      (link) => link.subject?.name || "Unknown Subject",
     );
 
     // Fetch feedbacks per subject
     const feedbackArrays = await Promise.all(
       subjectIds.map((sid) =>
-        Feedback.find({ faculty: id, subject: sid, term: term })
-      )
+        Feedback.find({ faculty: id, subject: sid, term: term }),
+      ),
     );
 
     // Calculate average ratings
@@ -311,7 +317,7 @@ exports.getFeedbackLink = async (req, res) => {
   try {
     const links = await FeedbackLink.find({ faculty: id }).populate(
       "subject",
-      "name unique_code"
+      "name unique_code",
     );
 
     res.json({ links });
@@ -448,7 +454,7 @@ Rules:
           temperature: 0.7,
           max_tokens: 600,
         }),
-      }
+      },
     );
 
     const data = await response.json();
@@ -471,11 +477,7 @@ Rules:
   }
 };
 
-exports.getPieChartData = (req, res) => {
-  const { id, facultyId } = req.params;
-  if (req.user._id.toString() === id) {
-  }
-};
+
 
 // GET distinct terms for a faculty
 exports.getFacultyFeedbackTerms = async (req, res) => {
