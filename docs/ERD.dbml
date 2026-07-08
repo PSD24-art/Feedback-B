@@ -1,0 +1,159 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table institutes {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  name varchar [not null]
+  code varchar
+  contact_email varchar
+  contact_phone bigint
+  contact_website varchar
+  address text
+  contact_person_name varchar
+  contact_person_mobile bigint
+  contact_person_email varchar
+}
+
+Table users {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  name varchar [not null]
+  username varchar [not null]
+  email varchar [not null]
+  password varchar
+  department varchar
+  institute_id objectid [note: 'Refers to institutes.id']
+  role varchar [not null, note: 'admin | faculty | superAdmin']
+  is_password_set boolean [default: false]
+}
+
+Table institute_admin_users {
+  institute_id objectid [not null]
+  user_id objectid [not null]
+
+  indexes {
+    (institute_id, user_id) [pk]
+  }
+}
+
+Table subjects {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  name varchar [not null]
+  code varchar
+  department varchar [not null]
+  faculty_id objectid [note: 'Assigned faculty user']
+  semester varchar [not null]
+  created_by objectid [note: 'User who created the subject']
+  unique_code varchar [not null, unique]
+}
+
+Table feedback_links {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  faculty_id objectid [not null]
+  subject_id objectid [not null]
+  link varchar [not null]
+  response_limit int
+  term varchar
+  created_at timestamp
+}
+
+Table tokens {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  token varchar [unique]
+  faculty_id objectid [not null]
+  subject_id objectid [not null]
+  used_by varchar [note: 'Student roll number']
+  used boolean [default: false]
+  created_at timestamp [note: 'Expires after 7 days in MongoDB']
+}
+
+Table feedbacks {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  student_name varchar [not null]
+  student_roll varchar [not null]
+  faculty_id objectid [not null]
+  subject_id objectid [not null]
+  token_id objectid [not null]
+
+  parameter1_q1 int
+  parameter1_q2 int
+
+  parameter2_q1 int
+  parameter2_q2 int
+  parameter2_q3 int
+  parameter2_q4 int
+
+  parameter3_q1 int
+  parameter3_q2 int
+  parameter3_q3 int
+  parameter3_q4 int
+
+  parameter4_q1 int
+  parameter4_q2 int
+  parameter4_q3 int
+
+  parameter5_q1 int
+  parameter5_q2 int
+  parameter5_q3 int
+
+  overall_effectiveness int
+  strengths text
+  improvements text
+  additional_comments text
+  created_at timestamp
+  term varchar
+}
+
+Table institute_requests {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  name varchar [not null]
+  code varchar
+  contact_email varchar
+  contact_phone bigint
+  contact_website varchar
+  address text
+  contact_person_name varchar
+  contact_person_mobile bigint
+  contact_person_email varchar
+}
+
+Table institute_request_admin_users {
+  institute_request_id objectid [not null]
+  user_id objectid [not null]
+
+  indexes {
+    (institute_request_id, user_id) [pk]
+  }
+}
+
+Table otps {
+  id objectid [primary key, note: 'MongoDB ObjectId']
+  email varchar [not null]
+  otp_hash varchar [not null]
+  created_at timestamp
+  expires_at timestamp [not null]
+  attempts int [default: 0]
+}
+
+Ref: users.institute_id > institutes.id
+
+Ref: institute_admin_users.institute_id > institutes.id
+Ref: institute_admin_users.user_id > users.id
+
+Ref: subjects.faculty_id > users.id
+Ref: subjects.created_by > users.id
+
+Ref: feedback_links.faculty_id > users.id
+Ref: feedback_links.subject_id > subjects.id
+
+Ref: tokens.faculty_id > users.id
+Ref: tokens.subject_id > subjects.id
+
+Ref: feedbacks.faculty_id > users.id
+Ref: feedbacks.subject_id > subjects.id
+Ref: feedbacks.token_id > tokens.id
+
+Ref: institute_request_admin_users.institute_request_id > institute_requests.id
+Ref: institute_request_admin_users.user_id > users.id
+
+Note: 'The running application treats faculty as users with role = faculty. This DBML follows that runtime model.'
+Note: 'feedback_links.faculty_id is modeled against users.id even though models/feedbackLink.js still declares ref: "Faculty".'

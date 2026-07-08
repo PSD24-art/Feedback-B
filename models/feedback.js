@@ -33,28 +33,36 @@ const feedbackSchema = new Schema({
     required: true,
   },
 
-  // Parameters 1
+  // Parameters 1 Subject Knowledge
   parameter1: {
     q1: { type: Number, min: 1, max: 5 },
     q2: { type: Number, min: 1, max: 5 },
   },
+
+  //P2 Teaching Effectiveness
   parameter2: {
     q1: { type: Number, min: 1, max: 5 },
     q2: { type: Number, min: 1, max: 5 },
     q3: { type: Number, min: 1, max: 5 },
     q4: { type: Number, min: 1, max: 5 },
   },
+
+  //P3 Communication & Engagement
   parameter3: {
     q1: { type: Number, min: 1, max: 5 },
     q2: { type: Number, min: 1, max: 5 },
     q3: { type: Number, min: 1, max: 5 },
     q4: { type: Number, min: 1, max: 5 },
   },
+
+  //P4 Evaluation & Feedback
   parameter4: {
     q1: { type: Number, min: 1, max: 5 },
     q2: { type: Number, min: 1, max: 5 },
     q3: { type: Number, min: 1, max: 5 },
   },
+
+  //P5 Professional Conduct
   parameter5: {
     q1: { type: Number, min: 1, max: 5 },
     q2: { type: Number, min: 1, max: 5 },
