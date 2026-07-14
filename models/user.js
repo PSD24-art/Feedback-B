@@ -62,7 +62,7 @@ module.exports = User;
 // const seedSuperAdmin = async () => {
 //   const admin = new User({
 //     name: "Prathamesh Dahake",
-//     username: "prathamesh@tiet",
+//     username: "psd@tiet",
 //     email: "pratham.dahakepsd@tietdarapu.in",
 //     role: "superAdmin",
 //     isPasswordSet: false,

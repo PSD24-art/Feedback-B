@@ -49,7 +49,7 @@ app.use(
     proxy: true,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
-      collectionName: "sessions",
+      collectionName: "sessions ",
       ttl: 7 * 24 * 60 * 60,
     }),
     cookie: {

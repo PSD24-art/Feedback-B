@@ -2,7 +2,7 @@ exports.getFacultyAiSummary = async (req, res) => {
   console.log("Route hit");
   try {
     const { facultyName, criteriaAnalysis, subjectAnalysis } = req.body;
-
+    // console.log("Data: ", facultyName, criteriaAnalysis, subjectAnalysis);
     const prompt = `
 You are an AI evaluator assessing a faculty member based on feedback data.
 
