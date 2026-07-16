@@ -5,7 +5,7 @@ const Feedback = require("../models/feedback");
 const Institute = require("../models/institute");
 const validator = require("validator");
 const nodemailer = require("nodemailer");
-const feedbackCalculator = require("../utils/feedbackCalculator");
+const feedbackCalculator = require("../utils/getAggregatedSubjectRatings");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 const analyzeRatings = require("../utils/analyzeRatings");
 const percentageForPie = require("../utils/percentageForPie");
@@ -204,12 +204,11 @@ exports.getOneFaculty = async (req, res) => {
     if (term !== "ALL") {
       filter.term = term;
     }
+
     const feedbackLinks = await FeedbackLink.find(filter).populate(
       "subject",
       "name unique_code",
     );
-
-    // console.log("Feedback links:", feedbackLinks);
 
     if (!feedbackLinks.length) {
       return res.json({
@@ -223,31 +222,31 @@ exports.getOneFaculty = async (req, res) => {
 
     const subjectIds = feedbackLinks.map((link) => link.subject._id);
 
-    const subjectNames = feedbackLinks.map(
-      (link) => link.subject?.name || "Unknown Subject",
+    // 1. Fetch pre-calculated database averages via utility
+    const ratingLookup = await feedbackCalculator.getAggregatedSubjectRatings(
+      facultyId,
+      subjectIds,
+      term,
     );
 
-    const feedbackArrays = await Promise.all(
-      subjectIds.map((sid) =>
-        Feedback.find({ faculty: facultyId, subject: sid }),
-      ),
-    );
-
-    const overallAvgArray = feedbackArrays.map((arr) => {
-      if (!arr.length) return 0;
-      const avg = feedbackCalculator(arr);
-      return Number.isNaN(avg) ? 0 : Number(avg.toFixed(2));
+    // 2. Map links to responses cleanly (maintains database sort layout and appends 0 if empty)
+    const ratingObjects = feedbackLinks.map((link) => {
+      const subjectIdStr = link.subject?._id?.toString();
+      return {
+        subjectName: link.subject?.name || "Unknown Subject",
+        avgRating: ratingLookup.get(subjectIdStr) || 0,
+      };
     });
 
-    const totalRating = (
-      overallAvgArray.reduce((a, b) => a + b, 0) / overallAvgArray.length
-    ).toFixed(2);
+    // 3. Compute the structural overall total rating score
+    const dynamicAverages = ratingObjects.map((r) => r.avgRating);
+    const sumOfAvg = dynamicAverages.reduce((a, b) => a + b, 0);
+    const totalRating =
+      dynamicAverages.length > 0
+        ? (sumOfAvg / dynamicAverages.length).toFixed(2)
+        : "0.00";
 
-    const ratingObjects = subjectNames.map((name, i) => ({
-      subjectName: name,
-      avgRating: overallAvgArray[i],
-    }));
-
+    // 4. Fire analytics logic
     const ratingsForAi = analyzeRatings(ratingObjects);
 
     return res.json({

@@ -6,19 +6,17 @@ const ExcelJS = require("exceljs");
 const { v4: uuidv4 } = require("uuid");
 const User = require("../models/user");
 const PORT = 3420;
-const feedbackCalculator = require("../utils/feedbackCalculator");
+const feedbackCalculator = require("../utils/getAggregatedSubjectRatings");
 const criteriWiseCharts = require("../utils/criteriaWiseBarChart");
 const analyzeRatings = require("../utils/analyzeRatings");
 const percentageForPie = require("../utils/percentageForPie");
 const { extractJSON } = require("../utils/extractjson");
 const { getFacultyAiSummary } = require("../utils/getFacultyAiSummary");
+const { default: mongoose } = require("mongoose");
 require("dotenv").config();
 
 exports.getFaculty = async (req, res) => {
   const { id, term } = req.params;
-  // console.log("term: ", term);
-
-  // console.log("User Id: ", id);
 
   if (req.user._id.toString() !== id) {
     return res.status(403).json({ error: "Unauthorized access" });
@@ -28,58 +26,41 @@ exports.getFaculty = async (req, res) => {
     const faculty = await User.findById(id);
     if (!faculty) return res.status(404).json({ error: "Faculty not found" });
 
-    // all feedback links created by this faculty
+    // 1. Fetch active feedback links
     const feedbackLinks = await FeedbackLink.find({
       faculty: id,
       term: term,
     }).populate("subject", "name unique_code");
-    // console.log("feedbackLinks:", feedbackLinks);
 
+    // Extract all subject IDs to aggregate on
     const subjectIds = feedbackLinks.map((link) => link.subject._id);
 
-    const subjectNames = feedbackLinks.map(
-      (link) => link.subject?.name || "Unknown Subject",
+    const ratingLookup = await feedbackCalculator.getAggregatedSubjectRatings(
+      id,
+      subjectIds,
+      term,
     );
 
-    // Fetch feedbacks per subject
-    const feedbackArrays = await Promise.all(
-      subjectIds.map((sid) =>
-        Feedback.find({ faculty: id, subject: sid, term: term }),
-      ),
-    );
-
-    // Calculate average ratings
-    const overallAvgArray = feedbackArrays.map((feedbackArr) => {
-      if (!feedbackArr.length) return 0;
-      const avg = feedbackCalculator(feedbackArr);
-      return Number.isNaN(avg) ? 0 : Number(avg.toFixed(2));
+    // 3. Map feedback links back to rating objects (Preserves ordering and catches 0 ratings)
+    const ratingObjects = feedbackLinks.map((link) => {
+      const subjectIdStr = link.subject?._id?.toString();
+      return {
+        subjectName: link.subject?.name || "Unknown Subject",
+        avgRating: ratingLookup.get(subjectIdStr) || 0,
+      };
     });
 
-    let sumOfAvg = 0;
-    for (let i = 0; i < overallAvgArray.length; i++) {
-      sumOfAvg = sumOfAvg + overallAvgArray[i];
-    }
+    // 4. Calculate total unified rating safely via Javascript arrays
+    const dynamicAverages = ratingObjects.map((r) => r.avgRating);
+    const sumOfAvg = dynamicAverages.reduce((acc, curr) => acc + curr, 0);
+    const totalRating =
+      dynamicAverages.length > 0
+        ? Number((sumOfAvg / dynamicAverages.length).toFixed(2))
+        : 0;
 
-    const totalRating = (sumOfAvg / overallAvgArray.length).toFixed(2);
-    // console.log("Total ratings: ", totalRating);
-
-    // response object
-    const ratingObjects = subjectNames.map((name, i) => ({
-      subjectName: name,
-      avgRating: overallAvgArray[i],
-    }));
-
-    // console.log("Ratings Objects: ", ratingObjects);
+    // 5. Generate AI analytics and respond
     const ratingsForAi = analyzeRatings(ratingObjects);
-    // console.log("ratings for AI Subjects: ", ratingsForAi);
-    console.log({
-      faculty,
-      ratingObjects,
-      totalRating,
-      ratingsForAi,
-      links: feedbackLinks,
-    });
-    //  Send response
+
     res.json({
       faculty,
       ratingObjects,

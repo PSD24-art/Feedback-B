@@ -78,6 +78,7 @@ const feedbackSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
   term: { type: String },
 });
+feedbackSchema.index({ faculty: 1, subject: 1, term: 1 });
 
 const Feedback = mongoose.model("Feedback", feedbackSchema);
 module.exports = Feedback;

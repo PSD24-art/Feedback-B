@@ -17,7 +17,7 @@
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
-    "joi": "^18.0.1",
+    "joi": "^18.2.3",
     "method-override": "^3.0.0",
     "mongoose": "^8.18.0",
     "nodemailer": "^7.0.6",
