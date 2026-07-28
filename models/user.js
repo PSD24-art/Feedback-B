@@ -19,6 +19,7 @@ const userSchema = new Schema({
   department: String,
   institute: { type: Schema.Types.ObjectId, ref: "Institute" },
   role: { type: String, required: true },
+  profile: { imageUrl: String, imageName: String },
   isPasswordSet: { type: Boolean, default: false },
 });
 userSchema.plugin(passportLocalMongoose);

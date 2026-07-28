@@ -7,6 +7,7 @@ const passport = require("passport");
 require("dotenv").config();
 const LocalStrategy = require("passport-local");
 const MongoStore = require("connect-mongo");
+const cloudinary = require("cloudinary").v2;
 
 // Local Modules
 const studentRouter = require("./routes/studentRouter");
@@ -20,6 +21,7 @@ const User = require("./models/user");
 const superAdminRouter = require("./routes/superAdminRouter");
 const Institute = require("./models/institute");
 const InstituteRequest = require("./models/instituteRequests");
+const photoReouter = require("./routes/profilePhotoRouter");
 
 const app = express();
 
@@ -67,6 +69,8 @@ app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
+
+app.use("/api", photoReouter);
 
 // DB
 const DB_URI = process.env.MONGO_URI;
