@@ -22,6 +22,7 @@ router.post("/login", passport.authenticate("local"), async (req, res) => {
   res.json({
     message: "Login successful",
     user: {
+      profile: user.profile,
       name: user.name,
       id: userId,
       role: user.role,
