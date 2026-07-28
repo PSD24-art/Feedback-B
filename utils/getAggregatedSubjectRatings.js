@@ -69,7 +69,6 @@ const getAggregatedSubjectRatings = async (facultyId, subjectIds, term) => {
     },
   ]);
 
-  // Return as a Map for O(1) lookups during array mapping
   return new Map(
     aggregatedRatings.map((item) => [item._id.toString(), item.subjectAvg]),
   );

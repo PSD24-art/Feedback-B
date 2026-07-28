@@ -33,7 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 const FRONTEND_URL = process.env.FRONTEND_URL;
 app.use(
   cors({
-    origin: [FRONTEND_URL, "http://localhost:5173"],
+    origin: [FRONTEND_URL, "http://localhost:5173/"],
     credentials: true,
   }),
 );
@@ -49,14 +49,14 @@ app.use(
     proxy: true,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
-      collectionName: "sessions ",
+      collectionName: "sessions",
       ttl: 7 * 24 * 60 * 60,
     }),
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: true, //  FORCE TRUE
-      sameSite: "none", //  FORCE NONE
+      secure: false, //  FORCE TRUE
+      sameSite: "lax", //  FORCE NONE
     },
   }),
 );
